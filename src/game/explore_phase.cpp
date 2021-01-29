@@ -206,32 +206,41 @@ explore_action processPlayerInput (explore_game *exploreGame) {
     return result;
 }
 
+void moveToRoom (explore_game *exploreGame, explore_action action) {
+    room_exit_list *exits = &exploreGame->currentRoom->exits;
+    for (int i = 0; i < exits->numValues; ++i) {
+        room_exit *exit = 
+
+    }
+       switch (action.moveDirection) {
+       case ROOM_EXIT_DIRECTION_NORTH:
+           exploreGame->currentStatusText = "Went north.";
+           break;
+       case ROOM_EXIT_DIRECTION_SOUTH:
+           exploreGame->currentStatusText = "Went south.";
+           break;
+       case ROOM_EXIT_DIRECTION_EAST:
+           exploreGame->currentStatusText = "Went east.";
+           break;
+       case ROOM_EXIT_DIRECTION_WEST:
+           exploreGame->currentStatusText = "Went west.";
+           break;
+       case ROOM_EXIT_DIRECTION_UP:
+           exploreGame->currentStatusText = "Went up.";
+           break;
+       case ROOM_EXIT_DIRECTION_DOWN:
+           exploreGame->currentStatusText = "Went down.";
+           break;
+       }
+}
+
 void doExploreAction (explore_game *exploreGame, explore_action action) {
     switch (action.type) {
         case ACTION_TYPE_LOOK: {
             exploreGame->currentStatusText = exploreGame->currentRoom->description;
         } break;
         case ACTION_TYPE_MOVE: {
-           switch (action.moveDirection) {
-           case ROOM_EXIT_DIRECTION_NORTH:
-               exploreGame->currentStatusText = "Went north.";
-               break;
-           case ROOM_EXIT_DIRECTION_SOUTH:
-               exploreGame->currentStatusText = "Went south.";
-               break;
-           case ROOM_EXIT_DIRECTION_EAST:
-               exploreGame->currentStatusText = "Went east.";
-               break;
-           case ROOM_EXIT_DIRECTION_WEST:
-               exploreGame->currentStatusText = "Went west.";
-               break;
-           case ROOM_EXIT_DIRECTION_UP:
-               exploreGame->currentStatusText = "Went up.";
-               break;
-           case ROOM_EXIT_DIRECTION_DOWN:
-               exploreGame->currentStatusText = "Went down.";
-               break;
-           }
+           moveToRoom(exploreGame, action);
         } break;
         case ACTION_TYPE_BAD_INPUT: {
             exploreGame->currentStatusText = "Sorry, I don't recognize that command";
