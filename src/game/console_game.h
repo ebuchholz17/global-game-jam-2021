@@ -1,36 +1,24 @@
 #ifndef CONSOLE_GAME_H
 #define CONSOLE_GAME_H
 
-struct dungeon_room {
-    char *title;
-    char *description;
-};
-#define LIST_TYPE dungeon_room
-#include "list.h"
+#define GAME_WIDTH 70
+#define GAME_HEIGHT 25
+
+#include "console_drawing.cpp"
+#include "explore_phase.cpp"
 
 enum console_game_state {
     CONSOLE_GAME_STATE_EXPLORE,
-    CONSOLE_GAME_STATE_ADVENTURE
-};
-
-enum explore_state {
-    EXPLORE_STATE_REVEAL_TEXT,
-    EXPLORE_STATE_INPUT
-};
-
-struct explore_game {
-    explore_state exploreState;
-    dungeon_room_list allRooms;
-    dungeon_room *currentRoom;
-    float revealTime;
+    CONSOLE_GAME_STATE_COMBAT
 };
 
 struct console_game {
     bool initialized;
     char currentColor;
 
-    console_game_state gameState;
-
+    int windowStartX;
+    int windowStartY;
+    console_game_state state;
     explore_game exploreGame;
 };
 
