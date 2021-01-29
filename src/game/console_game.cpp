@@ -1,5 +1,12 @@
 #include "console_game.h"
 
+char *literalStringExample = R"string(
+    test
+    test
+    test test
+    test test teset
+)string";
+
 void drawCharAtXY (char c, int x, int y, console_game *consoleGame, game_window window) {
     if (x >= 0 && x < window.width && y >= 0 && y < window.height) {
         window.buffer[(y * window.width + x)] = c;
@@ -7,12 +14,37 @@ void drawCharAtXY (char c, int x, int y, console_game *consoleGame, game_window 
     }
 }
 
+void buildTestRooms (explore_game *exploreGame, memory_arena *memory) {
+    exploreGame->allRooms = dungeon_roomListInit(memory, 100);
+
+    {
+        dungeon_room room = {};
+        room.title = "Test Room";
+        room.description = R"room(
+This is an example of the description text for a room.
+
+Here we are testing that the room text will display correctly.
+
+test
+    test
+        test
+            test
+
+test.
+)room";
+        listPush(&exploreGame->allRooms, room);
+    }
+}
+
+
 void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_game *consoleGame,
                         game_assets *assets, game_input *input, game_sounds *gameSounds,
                         game_window window)
 {
     if (!consoleGame->initialized) {
         consoleGame->initialized = true;
+
+        buildTestRooms(&consoleGame->exploreGame, memory);
     }
     consoleGame->currentColor = CONSOLE_COLOR_WHITE;
 
