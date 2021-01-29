@@ -21,6 +21,7 @@ dangers. But can you find the exit?
 
 Press ENTER to continue.)room";
 
+    buildItems(exploreGame, memory);
     buildRooms(exploreGame, memory);
     exploreGame->currentRoom = &exploreGame->allRooms.values[0];
     exploreGame->currentTitleText = titleText;
@@ -28,6 +29,9 @@ Press ENTER to continue.)room";
     exploreGame->isIntro = true;
     exploreGame->revealTime = 0.0f;
     exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
+
+    exploreGame->inventory = intListInit(memory, 10);
+    exploreGame->equippedItemID = -1;
 }
 
 void drawStatusText (explore_game *exploreGame, console_drawer *drawer, int numLettersRevealed) {
@@ -124,6 +128,17 @@ bool updatePlayerInput (explore_game *exploreGame, game_input *input, console_dr
     return input->enterKey.justPressed;
 }
 
+char *readRestOfLine (char *cursor, char *currentWord, int inputLength) {
+    int letterIndex = 0;
+    while (((*cursor >= 'A' && *cursor <= 'Z') || *cursor == ' ') && *cursor != '\n' && *cursor != 0 && letterIndex < inputLength) {
+        currentWord[letterIndex] = *cursor;
+        letterIndex++;
+        cursor++;
+    }
+    currentWord[letterIndex] = 0;
+    return cursor;
+}
+
 char *readInputWord (char *cursor, char *currentWord, int inputLength) {
     int letterIndex = 0;
     while ((*cursor >= 'A' && *cursor <= 'Z') && *cursor != '\n' && *cursor != 0 && letterIndex < inputLength) {
@@ -152,11 +167,11 @@ bool parseMoveDirection (char *input, explore_action *result) {
         result->moveDirection = ROOM_EXIT_DIRECTION_WEST;
         return true;
     }
-    else if (stringsAreEqual(input, "U") || stringsAreEqual(input, "UP")) {
+    else if (stringsAreEqual(input, "U") || stringsAreEqual(input, "UP") || stringsAreEqual(input, "UPWARD")) {
         result->moveDirection = ROOM_EXIT_DIRECTION_UP;
         return true;
     }
-    else if (stringsAreEqual(input, "D") || stringsAreEqual(input, "DOWN")) {
+    else if (stringsAreEqual(input, "D") || stringsAreEqual(input, "DOWN") || stringsAreEqual(input, "DOWNWARD")) {
         result->moveDirection = ROOM_EXIT_DIRECTION_DOWN;
         return true;
     }
@@ -196,6 +211,16 @@ explore_action processPlayerInput (explore_game *exploreGame) {
     if (stringsAreEqual(inputWord, "LOOK") || stringsAreEqual(inputWord, "L")) {
         result.type = ACTION_TYPE_LOOK;
     }
+    else if (stringsAreEqual(inputWord, "TAKE") || stringsAreEqual(inputWord, "GET") || stringsAreEqual(inputWord, "PICK")) {
+        result.type = ACTION_TYPE_TAKE_ITEM;
+    }
+    else if (stringsAreEqual(inputWord, "INVENTORY") || stringsAreEqual(inputWord, "I")) {
+        result.type = ACTION_TYPE_CHECK_INVENTORY;
+    }
+    else if (stringsAreEqual(inputWord, "EQUIP")) {
+        result.type = ACTION_TYPE_EQUIP;
+        readRestOfLine(cursor + 1, result.target, exploreGame->numTypedLetters - stringLength(inputWord) - 1);
+    }
     else if (parseMoveAction(inputWord, cursor, exploreGame->numTypedLetters - stringLength(inputWord), &result)) {
         result.type = ACTION_TYPE_MOVE;
     }
@@ -206,41 +231,165 @@ explore_action processPlayerInput (explore_game *exploreGame) {
     return result;
 }
 
-void moveToRoom (explore_game *exploreGame, explore_action action) {
-    room_exit_list *exits = &exploreGame->currentRoom->exits;
-    for (int i = 0; i < exits->numValues; ++i) {
-        room_exit *exit = 
-
+void copyDescriptionToBuffer (char *description, char *buffer) {
+    // zero out buffer
+    char *cursor = buffer;
+    while (*cursor != 0) {
+        *cursor = 0; 
+        ++cursor;
     }
-       switch (action.moveDirection) {
-       case ROOM_EXIT_DIRECTION_NORTH:
-           exploreGame->currentStatusText = "Went north.";
-           break;
-       case ROOM_EXIT_DIRECTION_SOUTH:
-           exploreGame->currentStatusText = "Went south.";
-           break;
-       case ROOM_EXIT_DIRECTION_EAST:
-           exploreGame->currentStatusText = "Went east.";
-           break;
-       case ROOM_EXIT_DIRECTION_WEST:
-           exploreGame->currentStatusText = "Went west.";
-           break;
-       case ROOM_EXIT_DIRECTION_UP:
-           exploreGame->currentStatusText = "Went up.";
-           break;
-       case ROOM_EXIT_DIRECTION_DOWN:
-           exploreGame->currentStatusText = "Went down.";
-           break;
-       }
+
+    cursor = description;
+    int index = 0;
+    while (*cursor != 0) {
+        assert(index < MAX_DESCRIPTION_LENGTH);
+        buffer[index] = *cursor;
+        ++cursor;
+        ++index;
+    }
 }
 
-void doExploreAction (explore_game *exploreGame, explore_action action) {
+void updateCurrentRoomDescription (explore_game *exploreGame, memory_arena *stringMemory) {
+    exploreGame->currentTitleText = exploreGame->currentRoom->title;
+    exploreGame->currentStatusText = exploreGame->currentRoom->description;
+
+    bool copyToDescriptionBuffer = false;
+    if (exploreGame->currentRoom->itemID != -1) {
+        dungeon_item *item = &exploreGame->allItems.values[exploreGame->currentRoom->itemID];
+        exploreGame->currentStatusText = appendString(exploreGame->currentStatusText, "\n\n", stringMemory);
+        exploreGame->currentStatusText = appendString(exploreGame->currentStatusText, item->roomDescription, stringMemory);
+        copyToDescriptionBuffer = true;
+    }
+
+    if (copyToDescriptionBuffer) {
+        copyDescriptionToBuffer(exploreGame->currentStatusText, exploreGame->descriptionBuffer);
+        exploreGame->currentStatusText = exploreGame->descriptionBuffer;
+    }
+}
+
+void moveToRoom (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
+    room_exit_list *exits = &exploreGame->currentRoom->exits;
+
+    int nextRoomID = -1;
+    for (int i = 0; i < exits->numValues; ++i) {
+        room_exit *exit = &exits->values[i];
+        if (exit->direction == action.moveDirection) {
+            nextRoomID = exit->connectedRoomID;
+            break;
+        }
+    }
+
+    if (nextRoomID != -1) {
+        assert(nextRoomID >= 0 && nextRoomID < exploreGame->allRooms.numValues);
+        exploreGame->currentRoom = &exploreGame->allRooms.values[nextRoomID];
+        updateCurrentRoomDescription(exploreGame, stringMemory);
+    }
+    else {
+        exploreGame->currentStatusText = "You can't go that way.";
+    }
+}
+
+void takeItemIfExists (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
+    if (exploreGame->currentRoom->itemID != -1) {
+        dungeon_item *item = &exploreGame->allItems.values[exploreGame->currentRoom->itemID];
+        char *statusText = appendString("You pick up the ", item->name, stringMemory);
+        statusText = appendString(statusText, ".", stringMemory);
+        copyDescriptionToBuffer(statusText, exploreGame->descriptionBuffer);
+        exploreGame->currentStatusText = exploreGame->descriptionBuffer;
+        listPush(&exploreGame->inventory, item->id);
+
+        exploreGame->currentRoom->itemID = -1;
+    }
+    else {
+        exploreGame->currentStatusText = "There is nothing to take.";
+    }
+}
+
+void printInventory (explore_game *exploreGame, memory_arena *stringMemory) {
+    if (exploreGame->inventory.numValues == 0) {
+        exploreGame->currentStatusText = "You aren't carrying any items.";
+    }
+    else {
+        char *inventoryText = "You are carrying:\n";
+
+        for (int i = 0; i < exploreGame->inventory.numValues; ++i) {
+            int itemID = exploreGame->inventory.values[i];
+            dungeon_item *item = &exploreGame->allItems.values[itemID];
+            inventoryText = appendString(inventoryText, "\nA ", stringMemory);
+            inventoryText = appendString(inventoryText, item->name, stringMemory);
+            inventoryText = appendString(inventoryText, ".", stringMemory);
+        }
+
+        if (exploreGame->equippedItemID != -1) {
+            dungeon_item *item = &exploreGame->allItems.values[exploreGame->equippedItemID];
+            inventoryText = appendString(inventoryText, "\n\nYou have equipped a ", stringMemory);
+            inventoryText = appendString(inventoryText, item->name, stringMemory);
+            inventoryText = appendString(inventoryText, ".", stringMemory);
+        }
+        else {
+            inventoryText = appendString(inventoryText, "\n\nYou have nothing equipped.", stringMemory);
+        }
+
+        copyDescriptionToBuffer(inventoryText, exploreGame->descriptionBuffer);
+        exploreGame->currentStatusText = exploreGame->descriptionBuffer;
+    }
+}
+
+void equipItem (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
+    int foundItemID = -1;
+
+    for (int i = 0; i < exploreGame->inventory.numValues; ++i) {
+        int itemID = exploreGame->inventory.values[i];
+        dungeon_item *item = &exploreGame->allItems.values[itemID];
+        for (int j = 0; j < item->alternateNames.numValues; ++j) {
+            char *itemName = item->alternateNames.values[j];
+            if (stringsAreEqual(action.target, itemName)) {
+                foundItemID = itemID;
+                goto findItemLoopDone;
+            }
+        }
+    }
+findItemLoopDone:
+
+    if (foundItemID != -1) {
+        dungeon_item *item = &exploreGame->allItems.values[foundItemID];
+        if (item->equippable) {
+            exploreGame->equippedItemID = foundItemID;
+            char *equipText = appendString("You equip the ", item->name, stringMemory); 
+            equipText = appendString(equipText, ".", stringMemory);
+
+            copyDescriptionToBuffer(equipText, exploreGame->descriptionBuffer);
+            exploreGame->currentStatusText = exploreGame->descriptionBuffer;
+        }
+        else {
+            exploreGame->currentStatusText = "You can't equip that.";
+        }
+    }
+    else {
+        char *equipText = appendString("You don't have a ", action.target, stringMemory); 
+        equipText = appendString(equipText, ".", stringMemory);
+
+        copyDescriptionToBuffer(equipText, exploreGame->descriptionBuffer);
+        exploreGame->currentStatusText = exploreGame->descriptionBuffer;
+    }
+}
+
+void doExploreAction (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
     switch (action.type) {
         case ACTION_TYPE_LOOK: {
-            exploreGame->currentStatusText = exploreGame->currentRoom->description;
+            updateCurrentRoomDescription(exploreGame, stringMemory);
         } break;
         case ACTION_TYPE_MOVE: {
-           moveToRoom(exploreGame, action);
+           moveToRoom(exploreGame, action, stringMemory);
+        } break;
+        case ACTION_TYPE_TAKE_ITEM: {
+           takeItemIfExists(exploreGame, action, stringMemory);
+        } break;
+        case ACTION_TYPE_CHECK_INVENTORY: {
+           printInventory(exploreGame, stringMemory);
+        } break;
+        case ACTION_TYPE_EQUIP: {
+           equipItem(exploreGame, action, stringMemory);
         } break;
         case ACTION_TYPE_BAD_INPUT: {
             exploreGame->currentStatusText = "Sorry, I don't recognize that command";
@@ -249,11 +398,14 @@ void doExploreAction (explore_game *exploreGame, explore_action action) {
     exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
 }
 
-void updateExplorePhase (explore_game *exploreGame, game_input *input, console_drawer *drawer) {
+void updateExplorePhase (explore_game *exploreGame, game_input *input, console_drawer *drawer, memory_arena *stringMemory) {
     drawTitleText(exploreGame, drawer);
     switch (exploreGame->state) {
         case EXPLORE_STATE_REVEAL_TEXT: {
             bool textRevealed = revealStatusText(exploreGame, drawer);
+            if (input->enterKey.justPressed) {
+                textRevealed = true;
+            }
             if (textRevealed) {
                 exploreGame->state = EXPLORE_STATE_INPUT;
             }
@@ -265,13 +417,12 @@ void updateExplorePhase (explore_game *exploreGame, game_input *input, console_d
             if (playerHitEnter) {
                 if (exploreGame->isIntro) {
                     exploreGame->isIntro = false;
-                    exploreGame->currentTitleText = exploreGame->currentRoom->title;
-                    exploreGame->currentStatusText = exploreGame->currentRoom->description;
+                    updateCurrentRoomDescription(exploreGame, stringMemory);
                     exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
                 }
                 else {
                     explore_action action = processPlayerInput(exploreGame);
-                    doExploreAction(exploreGame, action);
+                    doExploreAction(exploreGame, action, stringMemory);
                 }
 
                 exploreGame->numTypedLetters = 0;

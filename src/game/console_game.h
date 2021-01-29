@@ -4,6 +4,7 @@
 #define GAME_WIDTH 70
 #define GAME_HEIGHT 25
 
+#include "combat_types.h"
 #include "console_drawing.cpp"
 #include "explore_phase.cpp"
 
@@ -21,6 +22,5 @@ struct console_game {
     console_game_state state;
     explore_game exploreGame;
 };
-
 
 #endif

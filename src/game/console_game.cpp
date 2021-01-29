@@ -32,6 +32,10 @@ void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_
         initExplorePhase(&consoleGame->exploreGame, memory);
     }
 
+    memory_arena stringMemory = {};
+    stringMemory.capacity = 64 * 1024;
+    stringMemory.base = allocateMemorySize(tempMemory, stringMemory.capacity);
+
     console_drawer drawer = {};
     drawer.window = window;
     drawer.windowStartX = (window.width - GAME_WIDTH) / 2;
@@ -42,7 +46,7 @@ void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_
 
     switch (consoleGame->state) {
         case CONSOLE_GAME_STATE_EXPLORE: {
-            updateExplorePhase(&consoleGame->exploreGame, input, &drawer);
+            updateExplorePhase(&consoleGame->exploreGame, input, &drawer, &stringMemory);
         } break;
         case CONSOLE_GAME_STATE_COMBAT: {
 

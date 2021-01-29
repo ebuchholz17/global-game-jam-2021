@@ -2,7 +2,10 @@
 #define EXPLORE_PHASE_H
 
 #define MAX_TEXT_INPUT_LENGTH 60
+#define MAX_DESCRIPTION_LENGTH 2048
 
+#define LIST_TYPE int
+#include "list.h"
 
 enum room_exit_direction {
     ROOM_EXIT_DIRECTION_NORTH,
@@ -20,11 +23,35 @@ struct room_exit {
 #define LIST_TYPE room_exit
 #include "list.h"
 
+typedef char *charPtr;
+#define LIST_TYPE charPtr
+#include "list.h"
+
+struct dungeon_item {
+    int id;
+    char *name;
+    char *description;
+    char *roomDescription;
+    bool equippable;
+    charPtr_list alternateNames;
+};
+#define LIST_TYPE dungeon_item
+#include "list.h"
+
+
 struct dungeon_room {
     int id;
     char *title;
     char *description;
     room_exit_list exits;
+
+    bool hasChest;
+    bool chestOpen;
+
+    int numMonsters;
+    monster_type monsterType;
+
+    int itemID;
 };
 #define LIST_TYPE dungeon_room
 #include "list.h"
@@ -32,6 +59,12 @@ struct dungeon_room {
 enum action_type {
     ACTION_TYPE_LOOK,
     ACTION_TYPE_MOVE,
+    ACTION_TYPE_TAKE_ITEM,
+    ACTION_TYPE_CHECK_INVENTORY, 
+    ACTION_TYPE_EQUIP,
+    ACTION_TYPE_EXAMINE_ITEM, // TODO
+    ACTION_TYPE_READ, // TODO
+    ACTION_TYPE_OPEN_CHEST, // TODO
     ACTION_TYPE_BAD_INPUT
 };
 
@@ -39,6 +72,7 @@ struct explore_action {
     action_type type;
 
     room_exit_direction moveDirection;
+    char target[MAX_TEXT_INPUT_LENGTH]; // for equipping items, examining items, etc.
 };
 
 enum explore_state {
@@ -52,6 +86,10 @@ struct explore_game {
     dungeon_room *currentRoom;
     float revealTime;
 
+    dungeon_item_list allItems;
+    int_list inventory;
+    int equippedItemID;
+
     bool isIntro;
     char *currentTitleText;
     char *currentStatusText;
@@ -59,6 +97,7 @@ struct explore_game {
     int inputEnterY = 0;
 
     int numTypedLetters;
+    char descriptionBuffer[MAX_DESCRIPTION_LENGTH];
     char currentText[MAX_TEXT_INPUT_LENGTH];
 };
 
