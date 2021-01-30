@@ -8,10 +8,18 @@ enum monster_type {
 };
 
 enum weapon_type {
+    WEAPON_TYPE_UNARMED,
     WEAPON_TYPE_DAGGER,
     WEAPON_TYPE_SWORD,
     WEAPON_TYPE_BOW,
     WEAPON_TYPE_SPELLBOOK
+};
+
+struct combat_parameters {
+    int numMonsters;
+    monster_type monsterType;
+    weapon_type weaponType;
+    int spawnPositionsID;
 };
 
 #endif

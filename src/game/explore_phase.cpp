@@ -82,8 +82,7 @@ void drawTitleText (explore_game *exploreGame, console_drawer *drawer) {
     }
 }
 
-bool updatePlayerInput (explore_game *exploreGame, game_input *input, console_drawer *drawer) {
-    // determine where to draw the input
+int getDescriptionHeight (explore_game *exploreGame) {
     char *cursor = exploreGame->currentStatusText;
     int descriptionHeight = 0;
     while (*cursor != 0) {
@@ -92,6 +91,23 @@ bool updatePlayerInput (explore_game *exploreGame, game_input *input, console_dr
         }
         ++cursor;
     }
+    return descriptionHeight;
+}
+
+void drawFightText (explore_game *exploreGame, console_drawer *drawer) {
+    int descriptionHeight = getDescriptionHeight(exploreGame);
+
+    int inputY = descriptionHeight + 4; // skip title, add white space
+    drawCharAtXY('>', 1, inputY, drawer);
+    char *fightText = "FIGHT";
+    for (int i = 0; i < 5; ++i) {
+        drawCharAtXY(fightText[i], i + 2, inputY, drawer);
+    }
+}
+
+bool updatePlayerInput (explore_game *exploreGame, game_input *input, console_drawer *drawer) {
+    // determine where to draw the input
+    int descriptionHeight = getDescriptionHeight(exploreGame);
     int inputY = descriptionHeight + 4; // skip title, add white space
 
     if (input->numTypedChars > 0) {
@@ -261,6 +277,33 @@ void updateCurrentRoomDescription (explore_game *exploreGame, memory_arena *stri
         copyToDescriptionBuffer = true;
     }
 
+    if (exploreGame->currentRoom->numMonsters > 0 && 
+        !exploreGame->currentRoom->monstersDefeated) 
+    {
+        char *monsterText = "\n\n";
+        switch (exploreGame->currentRoom->monsterType) {
+            case MONSTER_TYPE_GOBLIN: {
+                int numMonsters = exploreGame->currentRoom->numMonsters;
+                if (numMonsters == 1) {
+                    monsterText = appendString(monsterText, "A goblin emerges from the darkness and ambushes you!", stringMemory);
+                }
+                else {
+                    char *numberText = numToString(numMonsters, stringMemory);
+                    monsterText = appendString(monsterText, numberText, stringMemory);
+                    monsterText = appendString(monsterText, " goblins emerge from the darkness and ambush you!", stringMemory);
+                }
+            } break;
+            case MONSTER_TYPE_GIANT_SNAKE: {
+                monsterText = appendString(monsterText, "A giant snake slithers across your path!", stringMemory);
+            } break;
+            case MONSTER_TYPE_DRAGON: {
+                monsterText = appendString(monsterText, "A ferocious fire-breathing dragon is guarding its treasure!", stringMemory);
+            } break;
+        }
+        exploreGame->currentStatusText = appendString(exploreGame->currentStatusText, monsterText, stringMemory);
+        copyToDescriptionBuffer = true;
+    }
+
     if (copyToDescriptionBuffer) {
         copyDescriptionToBuffer(exploreGame->currentStatusText, exploreGame->descriptionBuffer);
         exploreGame->currentStatusText = exploreGame->descriptionBuffer;
@@ -281,6 +324,12 @@ void moveToRoom (explore_game *exploreGame, explore_action action, memory_arena 
 
     if (nextRoomID != -1) {
         assert(nextRoomID >= 0 && nextRoomID < exploreGame->allRooms.numValues);
+        
+        // reset goblins
+        if (exploreGame->currentRoom->monsterType == MONSTER_TYPE_GOBLIN) {
+            exploreGame->currentRoom->monstersDefeated = false;
+        }
+
         exploreGame->currentRoom = &exploreGame->allRooms.values[nextRoomID];
         updateCurrentRoomDescription(exploreGame, stringMemory);
     }
@@ -381,6 +430,11 @@ void doExploreAction (explore_game *exploreGame, explore_action action, memory_a
         } break;
         case ACTION_TYPE_MOVE: {
            moveToRoom(exploreGame, action, stringMemory);
+           if (exploreGame->currentRoom->numMonsters > 0 && 
+               !exploreGame->currentRoom->monstersDefeated) 
+           {
+               exploreGame->aboutToFight = true;
+           }
         } break;
         case ACTION_TYPE_TAKE_ITEM: {
            takeItemIfExists(exploreGame, action, stringMemory);
@@ -392,14 +446,17 @@ void doExploreAction (explore_game *exploreGame, explore_action action, memory_a
            equipItem(exploreGame, action, stringMemory);
         } break;
         case ACTION_TYPE_BAD_INPUT: {
-            exploreGame->currentStatusText = "Sorry, I don't recognize that command";
+            exploreGame->currentStatusText = "Sorry, I don't recognize that command.";
         } break;
     }
     exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
 }
 
-void updateExplorePhase (explore_game *exploreGame, game_input *input, console_drawer *drawer, memory_arena *stringMemory) {
+bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_drawer *drawer, memory_arena *stringMemory) {
     drawTitleText(exploreGame, drawer);
+
+    bool readyToFight = false;
+
     switch (exploreGame->state) {
         case EXPLORE_STATE_REVEAL_TEXT: {
             bool textRevealed = revealStatusText(exploreGame, drawer);
@@ -412,22 +469,42 @@ void updateExplorePhase (explore_game *exploreGame, game_input *input, console_d
         } break;
         case EXPLORE_STATE_INPUT: {
             drawStatusText(exploreGame, drawer, stringLength(exploreGame->currentStatusText));
-            bool playerHitEnter = updatePlayerInput(exploreGame, input, drawer);
+            if (exploreGame->aboutToFight) {
+                drawFightText(exploreGame, drawer);
 
-            if (playerHitEnter) {
-                if (exploreGame->isIntro) {
-                    exploreGame->isIntro = false;
-                    updateCurrentRoomDescription(exploreGame, stringMemory);
-                    exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
+                if (input->enterKey.justPressed) {
+                    readyToFight = true;
                 }
-                else {
-                    explore_action action = processPlayerInput(exploreGame);
-                    doExploreAction(exploreGame, action, stringMemory);
-                }
+            }
+            else {
+                bool playerHitEnter = updatePlayerInput(exploreGame, input, drawer);
 
-                exploreGame->numTypedLetters = 0;
-                exploreGame->revealTime = 0.0f;
+                if (playerHitEnter) {
+                    if (exploreGame->isIntro) {
+                        exploreGame->isIntro = false;
+                        updateCurrentRoomDescription(exploreGame, stringMemory);
+                        exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
+                    }
+                    else {
+                        explore_action action = processPlayerInput(exploreGame);
+                        doExploreAction(exploreGame, action, stringMemory);
+                    }
+
+                    exploreGame->numTypedLetters = 0;
+                    exploreGame->revealTime = 0.0f;
+                }
             }
         } break;
     }
+
+    return readyToFight;
+}
+
+combat_parameters getCombatParameters (explore_game *exploreGame) {
+    combat_parameters result = {};
+    result.numMonsters = exploreGame->currentRoom->numMonsters;
+    result.monsterType = exploreGame->currentRoom->monsterType;
+    result.spawnPositionsID = exploreGame->currentRoom->spawnPositionsID;
+
+    return result;
 }

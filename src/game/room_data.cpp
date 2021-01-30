@@ -7,6 +7,7 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         item.description = "A short steel dagger coming to a sharp point.";
         item.roomDescription = "You see a lone, discarded dagger on the floor.";
         item.equippable = true;
+        item.weaponType = WEAPON_TYPE_DAGGER;
 
         item.alternateNames = charPtrListInit(memory, 10);
         listPush(&item.alternateNames, "DAGGER");
@@ -21,6 +22,7 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         item.description = "This long steel sword must be almost four feet long.";
         item.roomDescription = "You see the glint of a steel longsword hidden among the rose bushes.";
         item.equippable = true;
+        item.weaponType = WEAPON_TYPE_SWORD;
 
         item.alternateNames = charPtrListInit(memory, 10);
         listPush(&item.alternateNames, "LONGSWORD");
@@ -36,6 +38,7 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         item.description = "A wooden bow accompanied by a quiver of arrows.";
         item.roomDescription = "Among the rubble is a wooden bow and arrows, hidden away long ago." ;
         item.equippable = true;
+        item.weaponType = WEAPON_TYPE_BOW;
 
         item.alternateNames = charPtrListInit(memory, 10);
         listPush(&item.alternateNames, "BOW");
@@ -84,6 +87,7 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         item.description = "A book of magic spells, instructions not included."; 
         item.roomDescription = "";
         item.equippable = false;
+        item.weaponType = WEAPON_TYPE_SPELLBOOK;
 
         item.alternateNames = charPtrListInit(memory, 10);
         listPush(&item.alternateNames, "BOOK");
@@ -204,6 +208,9 @@ to the east.
                   in this room)room";
 
         room.itemID = -1;
+        room.numMonsters = 1;
+        room.monsterType = MONSTER_TYPE_GOBLIN;
+        room.spawnPositionsID = 0;
 
         room.exits = room_exitListInit(memory, 6);
         {
@@ -259,6 +266,10 @@ to the east.
         room.description = R"room()room";
         room.itemID = -1;
 
+        room.numMonsters = 1;
+        room.monsterType = MONSTER_TYPE_GIANT_SNAKE;
+        room.spawnPositionsID = 1;
+
         room.exits = room_exitListInit(memory, 6);
         {
             room_exit exit = {};
@@ -281,6 +292,10 @@ to the east.
         room.title = "Collapsed Spire";
         room.description = R"room()room";
         room.itemID = -1;
+
+        room.numMonsters = 4;
+        room.monsterType = MONSTER_TYPE_GOBLIN;
+        room.spawnPositionsID = 2;
 
         room.exits = room_exitListInit(memory, 6);
         {
@@ -397,6 +412,10 @@ to the east.
         room.description = R"room()room";
         room.itemID = -1;
 
+        room.numMonsters = 3;
+        room.monsterType = MONSTER_TYPE_GOBLIN;
+        room.spawnPositionsID = 3;
+
         room.exits = room_exitListInit(memory, 6);
         {
             room_exit exit = {};
@@ -500,6 +519,9 @@ to the east.
         room.title = "Great Hall";
         room.description = R"room()room";
         room.itemID = 3;
+
+        room.numMonsters = 1;
+        room.monsterType = MONSTER_TYPE_DRAGON;
 
         room.exits = room_exitListInit(memory, 6);
         {

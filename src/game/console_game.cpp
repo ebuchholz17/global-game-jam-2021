@@ -46,7 +46,12 @@ void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_
 
     switch (consoleGame->state) {
         case CONSOLE_GAME_STATE_EXPLORE: {
-            updateExplorePhase(&consoleGame->exploreGame, input, &drawer, &stringMemory);
+            bool readyToFight = updateExplorePhase(&consoleGame->exploreGame, input, &drawer, &stringMemory);
+            if (readyToFight) {
+                // load map, monsters, etc.
+
+                consoleGame->state = CONSOLE_GAME_STATE_COMBAT;
+            }
         } break;
         case CONSOLE_GAME_STATE_COMBAT: {
 

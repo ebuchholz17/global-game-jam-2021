@@ -33,6 +33,7 @@ struct dungeon_item {
     char *description;
     char *roomDescription;
     bool equippable;
+    weapon_type weaponType;
     charPtr_list alternateNames;
 };
 #define LIST_TYPE dungeon_item
@@ -50,6 +51,8 @@ struct dungeon_room {
 
     int numMonsters;
     monster_type monsterType;
+    bool monstersDefeated;
+    int spawnPositionsID;
 
     int itemID;
 };
@@ -95,6 +98,8 @@ struct explore_game {
     char *currentStatusText;
 
     int inputEnterY = 0;
+
+    bool aboutToFight;
 
     int numTypedLetters;
     char descriptionBuffer[MAX_DESCRIPTION_LENGTH];
