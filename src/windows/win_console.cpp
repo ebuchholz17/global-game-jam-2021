@@ -416,6 +416,7 @@ void winConsoleResetInput (win_console_input *input) {
     input->rightKey.justPressed = false;
     input->backspaceDown = false;
     input->enterKey.justPressed = false;
+    input->actionKey.justPressed = false;
     input->pointerState.justPressed = false;
     input->numTypedChars = 0;
 }

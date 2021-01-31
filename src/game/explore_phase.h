@@ -87,6 +87,7 @@ struct explore_game {
     explore_state state;
     dungeon_room_list allRooms;
     dungeon_room *currentRoom;
+    dungeon_room *prevRoom;
     float revealTime;
 
     dungeon_item_list allItems;
@@ -100,6 +101,7 @@ struct explore_game {
     int inputEnterY = 0;
 
     bool aboutToFight;
+    bool justLost;
 
     int numTypedLetters;
     char descriptionBuffer[MAX_DESCRIPTION_LENGTH];

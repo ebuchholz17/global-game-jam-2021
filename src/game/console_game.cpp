@@ -29,6 +29,10 @@ void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_
         consoleGame->windowStartX = 0;
         consoleGame->windowStartY = 0;
 
+        consoleGame->combatMemoryArena = {};
+        consoleGame->combatMemoryArena.capacity = 30 * 1024 * 1024;
+        consoleGame->combatMemoryArena.base = allocateMemorySize(memory, consoleGame->combatMemoryArena.capacity);
+
         initExplorePhase(&consoleGame->exploreGame, memory);
     }
 
@@ -49,12 +53,26 @@ void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_
             bool readyToFight = updateExplorePhase(&consoleGame->exploreGame, input, &drawer, &stringMemory);
             if (readyToFight) {
                 // load map, monsters, etc.
-
+                combat_parameters combatParams = getCombatParameters(&consoleGame->exploreGame);
+                consoleGame->combatGame = {};
+                consoleGame->combatMemoryArena.size = 0;
+                initCombatGame(&consoleGame->combatGame, combatParams, &consoleGame->combatMemoryArena);
+                setCombatArena(&consoleGame->combatGame, &drawer);
                 consoleGame->state = CONSOLE_GAME_STATE_COMBAT;
             }
         } break;
         case CONSOLE_GAME_STATE_COMBAT: {
-
+            bool combatOver = updateCombatPhase(&consoleGame->combatGame, input, &drawer, &stringMemory, tempMemory);
+            if (combatOver) {
+                bool victory = getVictory(&consoleGame->combatGame);
+                if (victory) {
+                    exploreGameOnVictory(&consoleGame->exploreGame, &stringMemory);
+                }
+                else {
+                    exploreGameOnDefeat(&consoleGame->exploreGame);
+                }
+                consoleGame->state = CONSOLE_GAME_STATE_EXPLORE;
+            }
         } break;
     }
 

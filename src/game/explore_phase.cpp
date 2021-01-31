@@ -12,18 +12,20 @@ int stringLength (char *string) {
     return length;
 }
 
-
 void initExplorePhase (explore_game *exploreGame, memory_arena *memory) {
     char *titleText = R"room(Welcome!)room";
     char *introText = R"room(You have stumbled upon the ruins of a great castle, its glory days 
-long-past.  Lost treasures await within if you can brave the 
-dangers. But can you find the exit?
+long-past. You can feel the magic in the air. Your thoughts seem to 
+have a certain... "tangibility" here. But focus on the task at hand!
+
+Lost treasures await within if you can brave the dangers. But can 
+you find the exit?
 
 Press ENTER to continue.)room";
 
     buildItems(exploreGame, memory);
     buildRooms(exploreGame, memory);
-    exploreGame->currentRoom = &exploreGame->allRooms.values[0];
+    exploreGame->currentRoom = &exploreGame->allRooms.values[2]; // QQQ
     exploreGame->currentTitleText = titleText;
     exploreGame->currentStatusText = introText;
     exploreGame->isIntro = true;
@@ -247,6 +249,21 @@ explore_action processPlayerInput (explore_game *exploreGame) {
     return result;
 }
 
+bool processPlayerYesNo (explore_game *exploreGame) {
+    char inputWord[MAX_TEXT_INPUT_LENGTH];
+    char *cursor = exploreGame->currentText;
+    cursor = readInputWord(cursor, inputWord, exploreGame->numTypedLetters);
+
+    if (stringsAreEqual(inputWord, "YES") || stringsAreEqual(inputWord, "Y")) {
+        return true;
+    }
+    else if (stringsAreEqual(inputWord, "NO") || stringsAreEqual(inputWord, "N")) {
+        return false;
+    }
+
+    return false;
+}
+
 void copyDescriptionToBuffer (char *description, char *buffer) {
     // zero out buffer
     char *cursor = buffer;
@@ -294,7 +311,7 @@ void updateCurrentRoomDescription (explore_game *exploreGame, memory_arena *stri
                 }
             } break;
             case MONSTER_TYPE_GIANT_SNAKE: {
-                monsterText = appendString(monsterText, "A giant snake slithers across your path!", stringMemory);
+                monsterText = appendString(monsterText, " A giant snake slithers across your path!", stringMemory);
             } break;
             case MONSTER_TYPE_DRAGON: {
                 monsterText = appendString(monsterText, "A ferocious fire-breathing dragon is guarding its treasure!", stringMemory);
@@ -330,6 +347,7 @@ void moveToRoom (explore_game *exploreGame, explore_action action, memory_arena 
             exploreGame->currentRoom->monstersDefeated = false;
         }
 
+        exploreGame->prevRoom = exploreGame->currentRoom;
         exploreGame->currentRoom = &exploreGame->allRooms.values[nextRoomID];
         updateCurrentRoomDescription(exploreGame, stringMemory);
     }
@@ -476,6 +494,33 @@ bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_d
                     readyToFight = true;
                 }
             }
+            else if (exploreGame->justLost) {
+                bool playerHitEnter = updatePlayerInput(exploreGame, input, drawer);
+                if (playerHitEnter) {
+                    if (exploreGame->isIntro) {
+                        exploreGame->isIntro = false;
+                        updateCurrentRoomDescription(exploreGame, stringMemory);
+                        exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
+                    }
+                    else {
+                        bool tryAgain = processPlayerYesNo(exploreGame);
+                        exploreGame->justLost = false;
+                        if (tryAgain) {
+                            updateCurrentRoomDescription(exploreGame, stringMemory);
+                            exploreGame->aboutToFight = true;
+                        }
+                        else {
+                            assert(exploreGame->prevRoom);
+                            exploreGame->currentRoom = exploreGame->prevRoom;
+                            updateCurrentRoomDescription(exploreGame, stringMemory);
+                            exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
+                        }
+                    }
+
+                    exploreGame->numTypedLetters = 0;
+                    exploreGame->revealTime = 0.0f;
+                }
+            }
             else {
                 bool playerHitEnter = updatePlayerInput(exploreGame, input, drawer);
 
@@ -506,5 +551,37 @@ combat_parameters getCombatParameters (explore_game *exploreGame) {
     result.monsterType = exploreGame->currentRoom->monsterType;
     result.spawnPositionsID = exploreGame->currentRoom->spawnPositionsID;
 
+    switch (exploreGame->equippedItemID) {
+        default: {
+            result.weaponType = WEAPON_TYPE_UNARMED;
+        } break;
+        case 0: {
+            result.weaponType = WEAPON_TYPE_DAGGER;
+        } break;
+        case 1: {
+            result.weaponType = WEAPON_TYPE_SWORD;
+        } break;
+        case 2: {
+            result.weaponType = WEAPON_TYPE_BOW;
+        } break;
+        case 5: {
+            result.weaponType = WEAPON_TYPE_SPELLBOOK;
+        } break;
+    }
+
     return result;
+}
+
+void exploreGameOnVictory (explore_game *exploreGame, memory_arena *stringMemory) {
+    exploreGame->currentRoom->monstersDefeated = true;
+    updateCurrentRoomDescription(exploreGame, stringMemory);
+    exploreGame->state = EXPLORE_STATE_INPUT;
+    exploreGame->aboutToFight = false;
+}
+
+void exploreGameOnDefeat (explore_game *exploreGame) {
+    exploreGame->currentStatusText = "Try this fight again?";
+    exploreGame->state = EXPLORE_STATE_INPUT;
+    exploreGame->aboutToFight = false;
+    exploreGame->justLost = true;
 }

@@ -52,8 +52,8 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         dungeon_item item = {};
         item.id = 3;
         item.name = "Magic Bracelet";
-        item.description = "A gold bangle emanting a magical energy engraved with the name: \"Sou'koban\""; 
-        item.roomDescription = "In the far corner of the room is a magic bracelet, sitting on a pedestal.";
+        item.description = "A gold bangle emanting a magical energy engraved with the name: \"Sou-ko Ba'an\""; 
+        item.roomDescription = "In the far corner of the room is a magic bracelet, sitting on a \npedestal.";
         item.equippable = false;
 
         item.alternateNames = charPtrListInit(memory, 10);
@@ -263,7 +263,24 @@ to the east.
         dungeon_room room = {};
         room.id = 5;
         room.title = "Snake Pit";
-        room.description = R"room()room";
+        room.description = R"room(You step onto a floor covered in what feels like human bones, but 
+it's so dark you can't be sure. You wonder if anyone has ever made 
+it out of this room alive.
+
+There is small hole in the wall to the east, which you might be able
+to climb through. There's a chain dangling from the ceiling that you
+can climb up.
+                                                         f
+     But               you        get        the         e
+                                                         e
+                                                         l      that
+there                                                    i
+             might                                       n
+                       be                                g
+                                                           something
+         around
+                                                here...
+    ...s l i t h e r i ng)room";
         room.itemID = -1;
 
         room.numMonsters = 1;
@@ -290,7 +307,22 @@ to the east.
         dungeon_room room = {};
         room.id = 6;
         room.title = "Collapsed Spire";
-        room.description = R"room()room";
+        room.description = R"room(The wreckage of the castle spire hangs above you, and there is 
+rubble all around you, although the center has been cleared out.
+Some of the wreckage has punctured a hole in the floor, which you 
+could probably drop down through, though it's unlikely you could 
+climb back up. There is also an open gate to the west.
+
+With the amount of                          this is probably a place
+debris scattered                                   that has become a
+around the                    r                            veritable
+room,                          u                                 den
+                                b
+                                 b
+                                  l                           Better
+of                                 e                         keep an
+creepy                                                   eye out for
+crawlies.                                             monsters here.)room";
         room.itemID = -1;
 
         room.numMonsters = 4;
@@ -409,7 +441,21 @@ to the east.
         dungeon_room room = {};
         room.id = 11;
         room.title = "Kitchen";
-        room.description = R"room()room";
+        room.description = R"room(This is the castle's kitchen, judging by arrangement of tables, 
+cabinets, and ovens. An entryway on the east side leads to the 
+castle courtyard. You also see a door to the north.
+
+The room is in a disorderly state, pots and pans strewn all over...
+
+a           h              a        t            j           m
+            e                       h            u           e
+p           r              p        e            s           s
+o           e              a        r            t           s
+t           ,              n        e                        .
+                                    ,            a
+
+It's wonder anything ever got done in this kitchen, nevermind 
+cooking.)room";
         room.itemID = -1;
 
         room.numMonsters = 3;
@@ -517,11 +563,26 @@ to the east.
         dungeon_room room = {};
         room.id = 15;
         room.title = "Great Hall";
-        room.description = R"room()room";
+        room.description = R"room(This would be a majestic dining hall if not for the blackened walls 
+and tattered tapetries. The stained glass windows are shattered, and
+most of the room is covered in ash.
+                                             over
+     F                               turned
+     o        r
+     r        e     t
+              a     h
+              s     e                     to
+         s    o
+         o    n
+         m    ,       tables  a     
+         e                     r          serve
+                                e       as
+                                               barricades.)room";
         room.itemID = 3;
 
         room.numMonsters = 1;
         room.monsterType = MONSTER_TYPE_DRAGON;
+        room.spawnPositionsID = 4;
 
         room.exits = room_exitListInit(memory, 6);
         {

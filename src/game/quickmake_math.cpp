@@ -461,6 +461,18 @@ inline float dotProduct (vector2 a, vector2 b) {
     return a.x * b.x + a.y * b.y;
 }
 
+inline float lengthSquared (vector2 a) {
+    return dotProduct(a, a);
+}
+
+inline float length (vector2 a) {
+    return sqrtf(lengthSquared(a));
+}
+
+inline vector2 normalize (vector2 a) {
+    return a * (1.0f / length(a));
+}
+
 inline vector2 operator* (matrix3x3 m, vector2 v){
     vector2 result;
 
@@ -1159,4 +1171,13 @@ inline frustum_corners FrustumCorners (vector3 origin, quaternion orientation,
     f.fov = fov;
     f.ratio = ratio;
     return FrustumCorners(f);
+}
+
+inline int absoluteValue (int a) {
+    if (a < 0) {
+        return -a;
+    }
+    else {
+        return a;
+    }
 }
