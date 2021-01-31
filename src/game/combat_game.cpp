@@ -154,8 +154,8 @@ void initCombatGame(combat_game *combatGame, combat_parameters combatParams, mem
     combatGame->player.combatInfo.health = 100;
     combatGame->player.combatInfo.alive = true;
     combatGame->player.combatInfo.facing = COMBAT_FACING_RIGHT;
-    combatGame->player.weaponType = WEAPON_TYPE_SPELLBOOK;//combatParams.weaponType; // QQQ
-    combatGame->player.sokobanEnabled = false;
+    combatGame->player.weaponType = combatParams.weaponType;
+    combatGame->sokobanEnabled = combatParams.sokobanEnabled;
 
     // init monsters
     combatGame->monsters = dungeon_monsterListInit(combatGame->memory, 5);
@@ -248,6 +248,64 @@ void drawHitPoints (combat_game *combatGame, console_drawer *drawer, memory_aren
     }
 }
 
+void pushBlock (combat_game *combatGame, dungeon_point blockCoords, combat_facing facing) {
+    char block = getArenaChar(combatGame, blockCoords.x, blockCoords.y);
+    switch (facing) {
+        case COMBAT_FACING_UP: {
+            char nextBlock = getArenaChar(combatGame, blockCoords.x, blockCoords.y - 1);
+            if (nextBlock == ' ') {
+            }
+            else {
+                dungeon_point nextCoords = blockCoords;
+                nextCoords.y--;
+                pushBlock(combatGame, nextCoords, facing);
+            }
+            setArenaChar(combatGame, ' ', blockCoords.x, blockCoords.y);
+            setArenaChar(combatGame, block, blockCoords.x, blockCoords.y - 1);
+        } break;
+        case COMBAT_FACING_DOWN:{
+            char nextBlock = getArenaChar(combatGame, blockCoords.x, blockCoords.y + 1);
+            if (nextBlock == ' ') {
+
+            }
+            else {
+                dungeon_point nextCoords = blockCoords;
+                nextCoords.y++;
+                pushBlock(combatGame, nextCoords, facing);
+            }
+                setArenaChar(combatGame, ' ', blockCoords.x, blockCoords.y);
+                setArenaChar(combatGame, block, blockCoords.x, blockCoords.y + 1);
+        } break;
+        case COMBAT_FACING_LEFT: {
+            char nextBlock = getArenaChar(combatGame, blockCoords.x - 1, blockCoords.y);
+            if (nextBlock == ' ') {
+
+            }
+            else {
+                dungeon_point nextCoords = blockCoords;
+                nextCoords.x--;
+                pushBlock(combatGame, nextCoords, facing);
+            }
+                setArenaChar(combatGame, ' ', blockCoords.x, blockCoords.y);
+                setArenaChar(combatGame, block, blockCoords.x - 1, blockCoords.y);
+        } break;
+        case COMBAT_FACING_RIGHT: {
+            char nextBlock = getArenaChar(combatGame, blockCoords.x + 1, blockCoords.y);
+            if (nextBlock == ' ') {
+
+            }
+            else {
+                dungeon_point nextCoords = blockCoords;
+                nextCoords.x++;
+                pushBlock(combatGame, nextCoords, facing);
+            }
+                setArenaChar(combatGame, ' ', blockCoords.x, blockCoords.y);
+                setArenaChar(combatGame, block, blockCoords.x + 1, blockCoords.y);
+        } break;
+
+    }
+}
+
 void updatePlayerPos (combat_game *combatGame, game_input *input) {
     // TODO(ebuchholz): treat X/Y independently, to slide off walls
     dungeon_player *player = &combatGame->player;
@@ -264,18 +322,35 @@ void updatePlayerPos (combat_game *combatGame, game_input *input) {
         while (newPos.subY <= -1.0f) {
             newPos.subY += 1.0f;
             newPos.coords.y--;
+            // collision check
+            char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+            if (arenaChar != ' ') {
+                newPos.coords.y++;
+            }
         }
         while (newPos.subY >= 1.0f) {
             newPos.subY -= 1.0f;
             newPos.coords.y++;
+            char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+            if (arenaChar != ' ') {
+                newPos.coords.y--;
+            }
         }
         while (newPos.subX >= 1.0f) {
             newPos.subX -= 1.0f;
             newPos.coords.x++;
+            char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+            if (arenaChar != ' ') {
+                newPos.coords.x--;
+            }
         }
         while (newPos.subX <= -1.0f) {
             newPos.subX += 1.0f;
             newPos.coords.x--;
+            char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+            if (arenaChar != ' ') {
+                newPos.coords.x++;
+            }
         }
     }
     else {
@@ -283,25 +358,43 @@ void updatePlayerPos (combat_game *combatGame, game_input *input) {
             // can't move yet
         }
         else {
+            bool moveUp = false;
             if (input->upKey.justPressed) {
                 newPos.coords.y--;
                 newPos.subX = 0.0f;
                 newPos.subY = 0.0f;
                 player->combatInfo.facing = COMBAT_FACING_UP;
+                moveUp = true;
             }
             else if (input->upKey.down) {
                 newPos.subY -= PLAYER_SPEED * DELTA_TIME;
                 while (newPos.subY <= -1.0f) {
                     newPos.subY += 1.0f;
                     newPos.coords.y--;
+                    moveUp = true;
                 }
                 player->combatInfo.facing = COMBAT_FACING_UP;
             }
+
+            if (moveUp) {
+                char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+                if (arenaChar != ' ') {
+                    if (combatGame->sokobanEnabled) {
+                        pushBlock(combatGame, newPos.coords, COMBAT_FACING_UP);
+                    }
+                    else {
+                        newPos.coords.y++;
+                    }
+                }
+            }
+
+            bool moveDown = false;
             if (input->downKey.justPressed) {
                 newPos.coords.y++;
                 newPos.subX = 0.0f;
                 newPos.subY = 0.0f;
                 player->combatInfo.facing = COMBAT_FACING_DOWN;
+                moveDown= true;
             }
             else if (input->downKey.down) {
                 newPos.subY += PLAYER_SPEED * DELTA_TIME;
@@ -310,12 +403,28 @@ void updatePlayerPos (combat_game *combatGame, game_input *input) {
                     newPos.coords.y++;
                 }
                 player->combatInfo.facing = COMBAT_FACING_DOWN;
+                moveDown= true;
             }
+
+            if (moveDown) {
+                char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+                if (arenaChar != ' ') {
+                    if (combatGame->sokobanEnabled) {
+                        pushBlock(combatGame, newPos.coords, COMBAT_FACING_DOWN);
+                    }
+                    else {
+                        newPos.coords.y--;
+                    }
+                }
+            }
+
+            bool moveLeft = false;
             if (input->leftKey.justPressed) {
                 newPos.coords.x--;
                 newPos.subX = 0.0f;
                 newPos.subY = 0.0f;
                 player->combatInfo.facing = COMBAT_FACING_LEFT;
+                moveLeft= true;
             }
             else if (input->leftKey.down) {
                 newPos.subX -= PLAYER_SPEED * DELTA_TIME;
@@ -324,12 +433,29 @@ void updatePlayerPos (combat_game *combatGame, game_input *input) {
                     newPos.coords.x--;
                 }
                 player->combatInfo.facing = COMBAT_FACING_LEFT;
+                moveLeft= true;
+                
             }
+
+            if (moveLeft) {
+                char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+                if (arenaChar != ' ') {
+                    if (combatGame->sokobanEnabled) {
+                        pushBlock(combatGame, newPos.coords, COMBAT_FACING_LEFT);
+                    }
+                    else {
+                        newPos.coords.x++;
+                    }
+                }
+            }
+
+            bool moveRight = false;
             if (input->rightKey.justPressed) {
                 newPos.coords.x++;
                 newPos.subX = 0.0f;
                 newPos.subY = 0.0f;
                 player->combatInfo.facing = COMBAT_FACING_RIGHT;
+                moveRight= true;
             }
             else if (input->rightKey.down) {
                 newPos.subX += PLAYER_SPEED * DELTA_TIME;
@@ -338,16 +464,25 @@ void updatePlayerPos (combat_game *combatGame, game_input *input) {
                     newPos.coords.x++;
                 }
                 player->combatInfo.facing = COMBAT_FACING_RIGHT;
+                moveRight= true;
+            }
+
+            if (moveRight) {
+                char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+                if (arenaChar != ' ') {
+                    if (combatGame->sokobanEnabled) {
+                        pushBlock(combatGame, newPos.coords, COMBAT_FACING_RIGHT);
+                    }
+                    else {
+                        newPos.coords.x--;
+                    }
+                }
             }
 
         }
-    }
+    } 
+    player->combatInfo.position = newPos;
 
-    // collision check
-    char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
-    if (arenaChar == ' ') {
-        player->combatInfo.position = newPos;
-    }
 }
 
 dungeon_point getFirstPointOnPathToTarget (combat_game *combatGame, dungeon_point start, dungeon_point target, memory_arena *tempMemory) {
@@ -418,6 +553,12 @@ dungeon_point getFirstPointOnPathToTarget (combat_game *combatGame, dungeon_poin
                     dungeon_point coords = {};
                     coords.x = node.coords.x + j;
                     coords.y = node.coords.y + i;
+
+                    if (coords.x < 0 || coords.x >= COMBAT_ARENA_WIDTH ||
+                        coords.y < 0 || coords.y >= COMBAT_ARENA_HEIGHT)
+                    {
+                        continue;
+                    }
 
                     char arenaChar = getArenaChar(combatGame, coords.x, coords.y);
                     if (arenaChar == ' ') {
@@ -1163,6 +1304,10 @@ void updateMonsterAttacks (combat_game *combatGame) {
             continue;
         }
 
+        if (combatGame->freeze) {
+            continue;
+        }
+
         monster->combatInfo.cooldownRemaining -= DELTA_TIME;
         if (monster->combatInfo.cooldownRemaining <= 0.0f) {
             monster->combatInfo.cooldownRemaining = 0.0f;
@@ -1170,6 +1315,40 @@ void updateMonsterAttacks (combat_game *combatGame) {
         if (monster->combatInfo.cooldownRemaining == 0.0f && monster->combatInfo.hitStunTime == 0.0f || monster->type == MONSTER_TYPE_DRAGON) {
             switch (monster->type) {
                 case MONSTER_TYPE_GOBLIN: {
+                    // hurt if touched
+                    dungeon_point hitCell = {};
+                    hitCell.x = monster->combatInfo.position.coords.x;
+                    hitCell.y = monster->combatInfo.position.coords.y;
+
+                    if (hitCell.x == player->combatInfo.position.coords.x && 
+                        hitCell.y == player->combatInfo.position.coords.y)
+                    {
+                        dungeon_attack attack = {};
+                        attack.t = 0.0f;
+                        attack.damage = 8;
+                        attack.duration = 0.0001f;
+                        attack.ownerIsPlayer = false;
+                        attack.ownerPos = monster->combatInfo.position.coords;
+
+                        if (player->combatInfo.position.subX - monster->combatInfo.position.subX < 0) {
+                            attack.ownerPos.x++;
+                        }
+                        else {
+                            attack.ownerPos.x--;
+                        }
+                        if (player->combatInfo.position.subY - monster->combatInfo.position.subY < 0) {
+                            attack.ownerPos.y++;
+                        }
+                        else {
+                            attack.ownerPos.y--;
+                        }
+
+                        attack.hitBoxes[attack.numHitBoxes++] = hitCell;
+
+                        listPush(&combatGame->activeAttacks, attack);
+                    }
+
+                    //short range attack
                     dungeon_point monsterPos = monster->combatInfo.position.coords;
                     dungeon_point playerPos = player->combatInfo.position.coords;
                     if ((monsterPos.y == playerPos.y && absoluteValue(monsterPos.x - playerPos.x) <= 1) || 
@@ -1729,6 +1908,10 @@ bool getVictory (combat_game *combatGame) {
     return combatGame->player.combatInfo.alive;
 }
 
+bool getGameWon (combat_game *combatGame) {
+    return combatGame->gameWon;
+}
+
 void drawGameEnd (combat_game *combatGame, console_drawer *drawer) {
     char *endMessage;
     if (getVictory(combatGame)) {
@@ -1940,6 +2123,14 @@ bool updateCombatPhase (combat_game *combatGame, game_input *input, console_draw
             }
             if (!combatGame->player.combatInfo.alive) {
                 combatOver = true;
+            }
+
+            dungeon_point playerPos = combatGame->player.combatInfo.position.coords;
+            if (playerPos.x < 0 || playerPos.x >= COMBAT_ARENA_WIDTH || 
+                playerPos.y < 0 || playerPos.y >= COMBAT_ARENA_HEIGHT) 
+            {
+                combatGame->gameWon = true;
+                endPhase = true;
             }
 
             if (combatOver) {

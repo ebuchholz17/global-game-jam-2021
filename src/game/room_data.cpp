@@ -233,7 +233,16 @@ to the east.
         dungeon_room room = {};
         room.id = 4;
         room.title = "Dungeon";
-        room.description = R"room()room";
+        room.description = R"room(Wrapping around the room are rows and rows of prison cells. Most of
+them are empty, and the rest are full of bones. It's so dark that
+you can barely see your hand in front of your face.
+
+To the west is an opening where a door has rusted and fallen down.
+To the east is a open gate, that is barely standing.
+
+In the floor in the center of the room is a large, circular hole,
+bloodstained around the edges. A chain is fixed to a nearby post
+and dangles down into the hole.)room";
 
         room.itemID = -1;
 
@@ -267,17 +276,17 @@ to the east.
 it's so dark you can't be sure. You wonder if anyone has ever made 
 it out of this room alive.
 
-There is small hole in the wall to the east, which you might be able
-to climb through. There's a chain dangling from the ceiling that you
+There's a small hole in the wall to the east, which you probably can
+climb through. There's a chain dangling from the ceiling that you
 can climb up.
-                                                         f
-     But               you        get        the         e
-                                                         e
-                                                         l      that
-there                                                    i
-             might                                       n
-                       be                                g
-                                                           something
+                                                          
+     But              you         get        the        f 
+                                                        e 
+                                                        e       that
+there                                                   l 
+             might                                      i 
+                       be                               n 
+                                                        g  something
          around
                                                 here...
     ...s l i t h e r i ng)room";
@@ -349,8 +358,22 @@ crawlies.                                             monsters here.)room";
         dungeon_room room = {};
         room.id = 7;
         room.title = "Caved-in Cubby Hole";
-        room.description = R"room()room";
+        room.description = R"room(This is a small, cramped crawlspace, littered with rubble and 
+debris. You don't see any connecting doors, although a hole to the 
+west is small enough to shimmy through. Light pokes through from 
+above, but there is no way to climb up.
+
+There is a tattered note here with some writing scrawled on it. It's
+pinned under a rock that won't budge, along with a singed skeletal 
+arm.)room";
         room.itemID = 2;
+
+        room.textToRead = R"room("To whoever finds this: I have found the treasure that is the key to
+escaping this place, but I do not dare attempt to take it. A 
+ferocious monster guards it, and there is no way to best the flames
+it wields. It seems it is my fate to waste away here in this spire,
+lest I be reduced to ashes. May fortune find you, and grant you
+better luck than I.")room";
 
         room.exits = room_exitListInit(memory, 6);
         {
@@ -366,8 +389,31 @@ crawlies.                                             monsters here.)room";
         dungeon_room room = {};
         room.id = 8;
         room.title = "Library: Lower Level";
-        room.description = R"room()room";
+        room.description = R"room(You've entered a vast hall that was once a grand library. Two story
+high bookcases line the walls and divide the room into sections.
+While there are missing books here and there, most of them seem
+intact.
+
+A door to the west leads out into the hallway, and there is a ladder
+you can go up to reach the second floor.
+
+On a wide table in front of you, there is an open journal with some
+notes scrawled in it. Although the handwriting is sloppy, you can 
+probably read it with a little effort.)room";
         room.itemID = -1;
+
+        room.textToRead = R"room("The following is a record of the spells that I have deciphered of
+the spellbook that resides in this very castle. I've locked the 
+book away for safe-keeping, but if anything should happen to me, let
+these notes serve as a guide for whomever may come across it.
+
+"FIREBALL - Chant this word to emit a flaming ball of fire that 
+seeks your foes.
+
+"FREEZE - Use this to halt your enemies in their tracks.
+
+"There is one more spell I have uncovered, but its meaning eludes 
+me. The letters seem to be encrypted: LRPOTETE.")room";
 
         room.exits = room_exitListInit(memory, 6);
         {
@@ -389,7 +435,12 @@ crawlies.                                             monsters here.)room";
         dungeon_room room = {};
         room.id = 9;
         room.title = "Library: Upper Level";
-        room.description = R"room()room";
+        room.description = R"room(This is the top floor of a grand library. The bookcases seem to
+stretch out into the horizon.
+
+Light pours into the room through shattered windows to the west,
+where there is a doorway. A ladder used for reaching books can be
+used to go down to the first floor.)room";
         room.itemID = -1;
         room.hasChest = true;
 
@@ -413,7 +464,16 @@ crawlies.                                             monsters here.)room";
         dungeon_room room = {};
         room.id = 10;
         room.title = "Courtyard Garden";
-        room.description = R"room()room";
+        room.description = R"room(This courtyard must have once housed a beautiful, well-maintained
+garden. It has since become overgrown and is infested with vines and
+thorny rose bushes.
+
+To the east is a kind of grand entryway. There are discarded plates
+and silverware at the foot of a door to the west.
+
+To the north is a shattered window that you can climb through, but
+it seems like a steep drop, so you may not be able to climb back
+through.)room";
         room.itemID = 1;
 
         room.exits = room_exitListInit(memory, 6);
@@ -442,7 +502,7 @@ crawlies.                                             monsters here.)room";
         dungeon_room room = {};
         room.id = 11;
         room.title = "Kitchen";
-        room.description = R"room(This is the castle's kitchen, judging by arrangement of tables, 
+        room.description = R"room(This is the castle's kitchen, judging by the arrangement of tables,
 cabinets, and ovens. An entryway on the east side leads to the 
 castle courtyard. You also see a door to the north.
 
@@ -483,7 +543,15 @@ cooking.)room";
         dungeon_room room = {};
         room.id = 12;
         room.title = "West Spire";
-        room.description = R"room()room";
+        room.description = R"room(This is the western spire of the castle. Through the window you can
+see nothing but open air where the eastern spire should be. You do
+see flashes of bright orange now and again through the shattered
+glass windows of a large room that must be a few rooms ahead of 
+this one.
+
+A door to the east looks like it leads into a hallway, but the edges
+seem to be darkened somehow. A staircase leads downward, and there
+is an open door to the south.)room";
         room.itemID = -1;
 
         room.exits = room_exitListInit(memory, 6);
@@ -512,7 +580,13 @@ cooking.)room";
         dungeon_room room = {};
         room.id = 13;
         room.title = "Charred Hallway";
-        room.description = R"room()room";
+        room.description = R"room(This is a majestic hallway lined with tapetries and paintings. Well,
+maybe it once was, but now the hallway is completely blackened and
+covered in ash. The hallway runs from west to east, and there is a
+large entryway to the north.
+
+There is a shattered window to the south, but it is too high to 
+reach.)room";
         room.itemID = -1;
 
         room.exits = room_exitListInit(memory, 6);
@@ -541,7 +615,16 @@ cooking.)room";
         dungeon_room room = {};
         room.id = 14;
         room.title = "Shambling Spire";
-        room.description = R"room()room";
+        room.description = R"room(You walk through the door to open air. If you had taken one more 
+step, you would have taken a long tumble down to the depths of the 
+castle.
+
+The spire that once stood here has completely collapsed. What 
+remains of the walls appears to be swaying in the wind. The rest of
+it is a collection of loose bricks and snapped beams.
+
+Actually, with some very careful footing, you could probably climb
+down, but it would be impossible to climb back up.)room";
         room.itemID = 4;
 
         room.exits = room_exitListInit(memory, 6);
@@ -566,7 +649,7 @@ cooking.)room";
         room.title = "Great Hall";
         room.description = R"room(This would be a majestic dining hall if not for the blackened walls 
 and tattered tapetries. The stained glass windows are shattered, and
-most of the room is covered in ash.
+most of the room is covered in ash. There is a south entryway.
                                              over
      F                               turned
      o        r

@@ -64,12 +64,18 @@ void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_
         case CONSOLE_GAME_STATE_COMBAT: {
             bool combatOver = updateCombatPhase(&consoleGame->combatGame, input, &drawer, &stringMemory, tempMemory);
             if (combatOver) {
-                bool victory = getVictory(&consoleGame->combatGame);
-                if (victory) {
-                    exploreGameOnVictory(&consoleGame->exploreGame, &stringMemory);
+                bool gameWon = getGameWon(&consoleGame->combatGame);
+                if (gameWon) {
+                    exploreGameOnGameWon(&consoleGame->exploreGame);
                 }
                 else {
-                    exploreGameOnDefeat(&consoleGame->exploreGame);
+                    bool victory = getVictory(&consoleGame->combatGame);
+                    if (victory) {
+                        exploreGameOnVictory(&consoleGame->exploreGame, &stringMemory);
+                    }
+                    else {
+                        exploreGameOnDefeat(&consoleGame->exploreGame);
+                    }
                 }
                 consoleGame->state = CONSOLE_GAME_STATE_EXPLORE;
             }

@@ -25,7 +25,7 @@ Press ENTER to continue.)room";
 
     buildItems(exploreGame, memory);
     buildRooms(exploreGame, memory);
-    exploreGame->currentRoom = &exploreGame->allRooms.values[2]; // QQQ
+    exploreGame->currentRoom = &exploreGame->allRooms.values[0]; // QQQ
     exploreGame->currentTitleText = titleText;
     exploreGame->currentStatusText = introText;
     exploreGame->isIntro = true;
@@ -244,6 +244,9 @@ explore_action processPlayerInput (explore_game *exploreGame) {
     }
     else if (stringsAreEqual(inputWord, "OPEN") || stringsAreEqual(inputWord, "UNLOCK")) {
         result.type = ACTION_TYPE_OPEN_CHEST;
+    }
+    else if (stringsAreEqual(inputWord, "READ")) {
+        result.type = ACTION_TYPE_READ;
     }
     else {
         result.type = ACTION_TYPE_BAD_INPUT;
@@ -494,6 +497,12 @@ it and equip it.)room";
     }
 }
 
+void tryRead (explore_game *exploreGame, memory_arena *stringMemory) {
+    if (exploreGame->currentRoom->textToRead) {
+        exploreGame->currentStatusText = exploreGame->currentRoom->textToRead;
+    }
+}
+
 void doExploreAction (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
     switch (action.type) {
         case ACTION_TYPE_LOOK: {
@@ -509,6 +518,9 @@ void doExploreAction (explore_game *exploreGame, explore_action action, memory_a
         } break;
         case ACTION_TYPE_OPEN_CHEST: {
            tryOpenChest(exploreGame, stringMemory);
+        } break;
+        case ACTION_TYPE_READ: {
+           tryRead(exploreGame, stringMemory);
         } break;
         case ACTION_TYPE_TAKE_ITEM: {
            takeItemIfExists(exploreGame, action, stringMemory);
@@ -543,6 +555,10 @@ bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_d
         } break;
         case EXPLORE_STATE_INPUT: {
             drawStatusText(exploreGame, drawer, stringLength(exploreGame->currentStatusText));
+            if (exploreGame->gameWon) {
+                return false;
+            }
+
             if (exploreGame->aboutToFight) {
                 drawFightText(exploreGame, drawer);
 
@@ -625,6 +641,14 @@ combat_parameters getCombatParameters (explore_game *exploreGame) {
         } break;
     }
 
+    for (int i = 0; i < exploreGame->inventory.numValues; ++i) {
+        int itemID = exploreGame->inventory.values[i];
+        if (itemID == 3) {
+            result.sokobanEnabled = true;
+            break;
+        }
+    }
+
     return result;
 }
 
@@ -640,4 +664,33 @@ void exploreGameOnDefeat (explore_game *exploreGame) {
     exploreGame->state = EXPLORE_STATE_INPUT;
     exploreGame->aboutToFight = false;
     exploreGame->justLost = true;
+}
+
+void exploreGameOnGameWon (explore_game *exploreGame) {
+    exploreGame->currentTitleText = "";
+    if (exploreGame->inventory.numValues == 6) {
+    exploreGame->currentStatusText = R"room(
+         __      _______ _____ _______ ____  _______     __
+         \ \    / /_   _/ ____|__   __/ __ \|  __ \ \   / /
+          \ \  / /  | || |       | | | |  | | |__) \ \_/ / 
+           \ \/ /   | || |       | | | |  | |  _  / \   /  
+            \  /   _| || |____   | | | |__| | | \ \  | |   
+             \/   |_____\_____|  |_|  \____/|_|  \_\ |_|   
+
+      Congratulations! Consider this castle thoroughly looted.)room";
+    }
+    else {
+    exploreGame->currentStatusText = R"room(
+         __      _______ _____ _______ ____  _______     __
+         \ \    / /_   _/ ____|__   __/ __ \|  __ \ \   / /
+          \ \  / /  | || |       | | | |  | | |__) \ \_/ / 
+           \ \/ /   | || |       | | | |  | |  _  / \   /  
+            \  /   _| || |____   | | | |__| | | \ \  | |   
+             \/   |_____\_____|  |_|  \____/|_|  \_\ |_|   
+
+      You made it out alive... But lost treasure still remains.)room";
+    }
+    exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
+    exploreGame->aboutToFight = false;
+    exploreGame->gameWon = true;
 }

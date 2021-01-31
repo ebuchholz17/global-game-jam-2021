@@ -91,7 +91,6 @@ struct dungeon_monster {
 struct dungeon_player {
     combat_info combatInfo;
     weapon_type weaponType;
-    bool sokobanEnabled;
 };
 
 struct dungeon_attack {
@@ -125,6 +124,9 @@ struct combat_game {
     char arena[COMBAT_ARENA_WIDTH * COMBAT_ARENA_HEIGHT];
 
     combat_game_state state;
+    bool sokobanEnabled;
+
+    bool gameWon;
 
     memory_arena *memory;
 

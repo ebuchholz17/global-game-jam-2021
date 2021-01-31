@@ -54,6 +54,8 @@ struct dungeon_room {
     bool monstersDefeated;
     int spawnPositionsID;
 
+    char *textToRead;
+
     int itemID;
 };
 #define LIST_TYPE dungeon_room
@@ -66,8 +68,8 @@ enum action_type {
     ACTION_TYPE_CHECK_INVENTORY, 
     ACTION_TYPE_EQUIP,
     ACTION_TYPE_EXAMINE_ITEM, // TODO
-    ACTION_TYPE_READ, // TODO
-    ACTION_TYPE_OPEN_CHEST, // TODO
+    ACTION_TYPE_READ,
+    ACTION_TYPE_OPEN_CHEST,
     ACTION_TYPE_HELP, // TODO
     ACTION_TYPE_BAD_INPUT
 };
@@ -103,6 +105,7 @@ struct explore_game {
 
     bool aboutToFight;
     bool justLost;
+    bool gameWon;
 
     int numTypedLetters;
     char descriptionBuffer[MAX_DESCRIPTION_LENGTH];

@@ -20,6 +20,7 @@ struct combat_parameters {
     monster_type monsterType;
     weapon_type weaponType;
     int spawnPositionsID;
+    bool sokobanEnabled;
 };
 
 #endif
