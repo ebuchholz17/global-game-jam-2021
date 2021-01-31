@@ -70,7 +70,7 @@ enum action_type {
     ACTION_TYPE_EXAMINE_ITEM, // TODO
     ACTION_TYPE_READ,
     ACTION_TYPE_OPEN_CHEST,
-    ACTION_TYPE_HELP, // TODO
+    ACTION_TYPE_HELP,
     ACTION_TYPE_BAD_INPUT
 };
 
@@ -110,7 +110,8 @@ struct explore_game {
     int numTypedLetters;
     char descriptionBuffer[MAX_DESCRIPTION_LENGTH];
     char currentText[MAX_TEXT_INPUT_LENGTH];
+
+    char *soundToPlay;
 };
 
-
-#endif
+#endif 

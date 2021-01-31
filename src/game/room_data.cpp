@@ -53,7 +53,7 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         item.id = 3;
         item.name = "Magic Bracelet";
         item.description = "A gold bangle emanting a magical energy engraved with the name: \"Sou-ko Ba'an\""; 
-        item.roomDescription = "In the far corner of the room is a magic bracelet, sitting on a \npedestal.";
+        item.roomDescription = "Secreted away in the corner is a magic bracelet, upon a pedestal....\nYou could reach it if you could navigate through the tables.";
         item.equippable = false;
 
         item.alternateNames = charPtrListInit(memory, 10);
@@ -107,7 +107,9 @@ void buildRooms (explore_game *exploreGame, memory_arena *memory) {
         room.title = "Sunlit Back Room";
         room.description = R"room(The ceiling of this room has collapsed, allowing the sun to shine 
 through. Rubble covers the floor. There is an open doorway to the
-north.)room";
+north.
+
+(Type HELP for instructions).)room";
         room.itemID = -1;
 
         room.exits = room_exitListInit(memory, 6);
@@ -648,19 +650,18 @@ down, but it would be impossible to climb back up.)room";
         room.id = 15;
         room.title = "Great Hall";
         room.description = R"room(This would be a majestic dining hall if not for the blackened walls 
-and tattered tapetries. The stained glass windows are shattered, and
-most of the room is covered in ash. There is a south entryway.
+and tattered tapetries. The stained glass windows are shattered, a
+charcoal-black blanket of ash covers the room. South is an entryway.
                                              over
-     F                               turned
-     o        r
-     r        e     t
-              a     h
-              s     e                     to
-         s    o
-         o    n
-         m    ,       tables  a     
-         e                     r          serve
-                                e       as
+        F                            turned         t
+        o                                           o
+        r                t
+              reason,    h    t                serve
+                         e    a                        a
+         s                    b                        s
+         o                    l  a
+         m                    e   r
+         e                    s    e
                                                barricades.)room";
         room.itemID = 3;
 

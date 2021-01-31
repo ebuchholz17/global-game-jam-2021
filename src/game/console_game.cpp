@@ -50,7 +50,7 @@ void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_
 
     switch (consoleGame->state) {
         case CONSOLE_GAME_STATE_EXPLORE: {
-            bool readyToFight = updateExplorePhase(&consoleGame->exploreGame, input, &drawer, &stringMemory);
+            bool readyToFight = updateExplorePhase(&consoleGame->exploreGame, input, &drawer, &stringMemory, gameSounds, assets);
             if (readyToFight) {
                 // load map, monsters, etc.
                 combat_parameters combatParams = getCombatParameters(&consoleGame->exploreGame);
@@ -62,10 +62,11 @@ void updateConsoleGame (memory_arena *memory, memory_arena *tempMemory, console_
             }
         } break;
         case CONSOLE_GAME_STATE_COMBAT: {
-            bool combatOver = updateCombatPhase(&consoleGame->combatGame, input, &drawer, &stringMemory, tempMemory);
+            bool combatOver = updateCombatPhase(&consoleGame->combatGame, input, &drawer, &stringMemory, tempMemory, gameSounds, assets);
             if (combatOver) {
                 bool gameWon = getGameWon(&consoleGame->combatGame);
                 if (gameWon) {
+                    playSound("victory", gameSounds, assets);
                     exploreGameOnGameWon(&consoleGame->exploreGame);
                 }
                 else {

@@ -19,6 +19,8 @@ dungeon_monster buildMonster (monster_type type, memory_arena *memory) {
         case MONSTER_TYPE_DRAGON: {
             result.name = "Dragon";
             result.combatInfo.health = 100;
+            result.combatInfo.facing = COMBAT_FACING_LEFT;
+            result.attackTimer = 1.9f;
             result.hurtBox = {};
             result.hurtBox.min.x = 0;
             result.hurtBox.min.y = 0;
@@ -134,7 +136,7 @@ dungeon_point getStartingPosition (int spawnPositionsID, bool player, int monste
                         assert(0);
                     } break;
                     case 0: {
-                        result.x = 68;
+                        result.x = 73;
                         result.y = 15;
                     } break;
                 }
@@ -724,7 +726,7 @@ void faceMonsterTowardsPlayer (combat_info *playerInfo, combat_info *monsterInfo
     }
 }
 
-void updateSnakePosition (combat_game *combatGame, dungeon_monster *monster) {
+void updateSnakePosition (combat_game *combatGame, dungeon_monster *monster, memory_arena *tempMemory) {
     dungeon_position newPos = monster->combatInfo.position;
 
     if (monster->combatInfo.hitStunTime > 0.0f) {
@@ -734,42 +736,61 @@ void updateSnakePosition (combat_game *combatGame, dungeon_monster *monster) {
         }
     }
 
-    switch (monster->combatInfo.facing) {
-        case COMBAT_FACING_UP: {
-            newPos.subY -= SNAKE_SPEED * DELTA_TIME;
+    monster->timer += DELTA_TIME;
+    while (monster->timer >= 2.5f) {
+        monster->timer -= 2.5f;
+    }
+    if (monster->timer > 2.0f) {
+        dungeon_player *player = &combatGame->player;
+        dungeon_point playerPos = player->combatInfo.position.coords;
+        dungeon_point nextPoint = getFirstPointOnPathToTarget(combatGame, newPos.coords, playerPos, tempMemory);
+
+        if (nextPoint.y < newPos.coords.y) {
+            newPos.subY -= SNAKE_CHARGE_SPEED * DELTA_TIME;
             while (newPos.subY <= -1.0f) {
                 newPos.subY += 1.0f;
                 newPos.coords.y--;
+                char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+                if (arenaChar != ' ') {
+                    newPos.coords.y++;
+                }
             }
-        } break;
-        case COMBAT_FACING_DOWN: {
-            newPos.subY += SNAKE_SPEED * DELTA_TIME;
+        }
+        if (nextPoint.y > newPos.coords.y) {
+            newPos.subY += SNAKE_CHARGE_SPEED * DELTA_TIME;
             while (newPos.subY >= 1.0f) {
                 newPos.subY -= 1.0f;
                 newPos.coords.y++;
+                char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+                if (arenaChar != ' ') {
+                    newPos.coords.y--;
+                }
             }
-        } break;
-        case COMBAT_FACING_LEFT: {
-            newPos.subX -= SNAKE_SPEED * DELTA_TIME;
+        }
+        if (nextPoint.x < newPos.coords.x) {
+            newPos.subX -= SNAKE_CHARGE_SPEED * DELTA_TIME;
             while (newPos.subX <= -1.0f) {
                 newPos.subX += 1.0f;
                 newPos.coords.x--;
+                char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+                if (arenaChar != ' ') {
+                    newPos.coords.x++;
+                }
             }
-        } break;
-        case COMBAT_FACING_RIGHT: {
-            newPos.subX += SNAKE_SPEED * DELTA_TIME;
+        }
+        if (nextPoint.x > newPos.coords.x) {
+            newPos.subX += SNAKE_CHARGE_SPEED * DELTA_TIME;
             while (newPos.subX >= 1.0f) {
                 newPos.subX -= 1.0f;
                 newPos.coords.x++;
+                char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+                if (arenaChar != ' ') {
+                    newPos.coords.x--;
+                }
             }
-        } break;
-    }
+        }
 
-    static int facingIndex = 0;
-
-    char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
-    if (arenaChar == ' ') {
-        dungeon_point lastPos = monster->combatInfo.position.coords;
+            dungeon_point lastPos = monster->combatInfo.position.coords;
 
         if (lastPos.x != newPos.coords.x || lastPos.y != newPos.coords.y) {
             dungeon_point *segment = &monster->segments.values[0];
@@ -790,77 +811,176 @@ void updateSnakePosition (combat_game *combatGame, dungeon_monster *monster) {
                 lastPos = tempPos;
             }
         }
-
         monster->combatInfo.position = newPos;
     }
     else {
-        facingIndex = (facingIndex + 1) % 11;
-        if (facingIndex == 1) {
-            faceMonsterTowardsPlayer(&combatGame->player.combatInfo, &monster->combatInfo);
+        switch (monster->combatInfo.facing) {
+            case COMBAT_FACING_UP: {
+                newPos.subY -= SNAKE_SPEED * DELTA_TIME;
+                while (newPos.subY <= -1.0f) {
+                    newPos.subY += 1.0f;
+                    newPos.coords.y--;
+                }
+            } break;
+            case COMBAT_FACING_DOWN: {
+                newPos.subY += SNAKE_SPEED * DELTA_TIME;
+                while (newPos.subY >= 1.0f) {
+                    newPos.subY -= 1.0f;
+                    newPos.coords.y++;
+                }
+            } break;
+            case COMBAT_FACING_LEFT: {
+                newPos.subX -= SNAKE_SPEED * DELTA_TIME;
+                while (newPos.subX <= -1.0f) {
+                    newPos.subX += 1.0f;
+                    newPos.coords.x--;
+                }
+            } break;
+            case COMBAT_FACING_RIGHT: {
+                newPos.subX += SNAKE_SPEED * DELTA_TIME;
+                while (newPos.subX >= 1.0f) {
+                    newPos.subX -= 1.0f;
+                    newPos.coords.x++;
+                }
+            } break;
+        }
+
+        static int facingIndex = 0;
+
+        char arenaChar = getArenaChar(combatGame, newPos.coords.x, newPos.coords.y);
+        if (arenaChar == ' ') {
+            dungeon_point lastPos = monster->combatInfo.position.coords;
+
+            if (lastPos.x != newPos.coords.x || lastPos.y != newPos.coords.y) {
+                dungeon_point *segment = &monster->segments.values[0];
+
+                segment->x = newPos.coords.x;
+                segment->y = newPos.coords.y;
+
+                lastPos = monster->combatInfo.position.coords;
+
+                for (int i = 1; i < monster->segments.numValues; ++i) {
+                    segment = &monster->segments.values[i];
+
+                    dungeon_point tempPos = *segment;
+
+                    segment->x = lastPos.x;
+                    segment->y = lastPos.y;
+
+                    lastPos = tempPos;
+                }
+            }
+
+            monster->combatInfo.position = newPos;
         }
         else {
-            switch (monster->combatInfo.facing) {
-                case COMBAT_FACING_UP: {
-                    if (facingIndex == 0 || facingIndex == 3 || facingIndex == 4 || facingIndex == 6 || facingIndex == 9 || facingIndex == 10) {
-                        monster->combatInfo.facing = COMBAT_FACING_LEFT;
-                    }
-                    else {
-                        monster->combatInfo.facing = COMBAT_FACING_RIGHT;
-                    }
-                } break;
-                case COMBAT_FACING_DOWN: {
-                    if (facingIndex == 0 || facingIndex == 3 || facingIndex == 4 || facingIndex == 6 || facingIndex == 9 || facingIndex == 10) {
-                        monster->combatInfo.facing = COMBAT_FACING_LEFT;
-                    }
-                    else {
-                        monster->combatInfo.facing = COMBAT_FACING_RIGHT;
-                    }
-                } break;
-                case COMBAT_FACING_LEFT: {
-                    if (facingIndex == 0 || facingIndex == 3 || facingIndex == 4 || facingIndex == 6 || facingIndex == 9 || facingIndex == 10) {
-                        monster->combatInfo.facing = COMBAT_FACING_UP;
-                    }
-                    else {
-                        monster->combatInfo.facing = COMBAT_FACING_DOWN;
-                    }
-                } break;
-                case COMBAT_FACING_RIGHT: {
-                    if (facingIndex == 0 || facingIndex == 3 || facingIndex == 4 || facingIndex == 6 || facingIndex == 9 || facingIndex == 10) {
-                        monster->combatInfo.facing = COMBAT_FACING_UP;
-                    }
-                    else {
-                        monster->combatInfo.facing = COMBAT_FACING_DOWN;
-                    }
-                } break;
+            facingIndex = (facingIndex + 1) % 11;
+            if (facingIndex == 1) {
+                faceMonsterTowardsPlayer(&combatGame->player.combatInfo, &monster->combatInfo);
+            }
+            else {
+                switch (monster->combatInfo.facing) {
+                    case COMBAT_FACING_UP: {
+                        if (facingIndex == 0 || facingIndex == 3 || facingIndex == 4 || facingIndex == 6 || facingIndex == 9 || facingIndex == 10) {
+                            monster->combatInfo.facing = COMBAT_FACING_LEFT;
+                        }
+                        else {
+                            monster->combatInfo.facing = COMBAT_FACING_RIGHT;
+                        }
+                    } break;
+                    case COMBAT_FACING_DOWN: {
+                        if (facingIndex == 0 || facingIndex == 3 || facingIndex == 4 || facingIndex == 6 || facingIndex == 9 || facingIndex == 10) {
+                            monster->combatInfo.facing = COMBAT_FACING_LEFT;
+                        }
+                        else {
+                            monster->combatInfo.facing = COMBAT_FACING_RIGHT;
+                        }
+                    } break;
+                    case COMBAT_FACING_LEFT: {
+                        if (facingIndex == 0 || facingIndex == 3 || facingIndex == 4 || facingIndex == 6 || facingIndex == 9 || facingIndex == 10) {
+                            monster->combatInfo.facing = COMBAT_FACING_UP;
+                        }
+                        else {
+                            monster->combatInfo.facing = COMBAT_FACING_DOWN;
+                        }
+                    } break;
+                    case COMBAT_FACING_RIGHT: {
+                        if (facingIndex == 0 || facingIndex == 3 || facingIndex == 4 || facingIndex == 6 || facingIndex == 9 || facingIndex == 10) {
+                            monster->combatInfo.facing = COMBAT_FACING_UP;
+                        }
+                        else {
+                            monster->combatInfo.facing = COMBAT_FACING_DOWN;
+                        }
+                    } break;
+                }
             }
         }
     }
+
 }
 
 void updateDragonPosition (combat_game *combatGame, dungeon_monster *monster) {
     dungeon_position newPos = monster->combatInfo.position;
 
-    if (monster->combatInfo.hitStunTime > 0.0f) {
-        monster->combatInfo.hitStunTime -= DELTA_TIME;
-        if (monster->combatInfo.hitStunTime <= 0.0f) {
-            monster->combatInfo.hitStunTime = 0.0f;
+    if (monster->phase2) {
+        float flyDuration = 0.5f;
+        monster->moveTimer += DELTA_TIME;
+
+        if (monster->moveTimer >= flyDuration) {
+            monster->moveTimer = flyDuration;
         }
-    }
 
-    monster->timer += DELTA_TIME;
-    float yVelocity = cosf(2.0f * monster->timer) * DRAGON_ACCELERATION;
+        float t = monster->moveTimer / flyDuration;
 
-    newPos.subY += yVelocity * DELTA_TIME;
-    while (newPos.subY <= -1.0f) {
-        newPos.subY += 1.0f;
-        newPos.coords.y--;
-    }
-    while (newPos.subY >= 1.0f) {
-        newPos.subY -= 1.0f;
-        newPos.coords.y++;
-    }
+        if (monster->leftSide) {
+            float x = 11.0f + t * (73.0f - 11.0f);
+            newPos.coords.x = (int)x;
+        }
+        else {
+            float x = 73.0f + t * (11.0f - 73.0f);
+            newPos.coords.x = (int)x;
+        }
 
-    monster->combatInfo.position = newPos;
+        monster->combatInfo.position = newPos;
+
+        if (monster->moveTimer == flyDuration) {
+            monster->phase2 = false;
+
+            if (monster->leftSide) {
+                monster->leftSide = false;
+                monster->combatInfo.facing = COMBAT_FACING_LEFT;
+            }
+            else {
+                monster->leftSide = true;
+                monster->combatInfo.facing = COMBAT_FACING_RIGHT;
+            }
+            monster->moveTimer = 0.0f;
+        }
+
+    }
+    else {
+        if (monster->combatInfo.hitStunTime > 0.0f) {
+            monster->combatInfo.hitStunTime -= DELTA_TIME;
+            if (monster->combatInfo.hitStunTime <= 0.0f) {
+                monster->combatInfo.hitStunTime = 0.0f;
+            }
+        }
+
+        monster->timer += DELTA_TIME;
+        float yVelocity = cosf(2.0f * monster->timer) * DRAGON_ACCELERATION;
+
+        newPos.subY += yVelocity * DELTA_TIME;
+        while (newPos.subY <= -1.0f) {
+            newPos.subY += 1.0f;
+            newPos.coords.y--;
+        }
+        while (newPos.subY >= 1.0f) {
+            newPos.subY -= 1.0f;
+            newPos.coords.y++;
+        }
+
+        monster->combatInfo.position = newPos;
+    }
 }
 
 void updateMonsterPositions (combat_game *combatGame, memory_arena *tempMemory) {
@@ -880,7 +1000,7 @@ void updateMonsterPositions (combat_game *combatGame, memory_arena *tempMemory) 
                 updateGoblinPosition(combatGame, monster, tempMemory);
             } break;
             case MONSTER_TYPE_GIANT_SNAKE: {
-                updateSnakePosition(combatGame, monster);
+                updateSnakePosition(combatGame, monster, tempMemory);
             } break;
             case MONSTER_TYPE_DRAGON: {
                 updateDragonPosition(combatGame, monster);
@@ -1112,6 +1232,7 @@ void spawnFireball (combat_game *combatGame) {
     projectile.character = 'O';
     projectile.color = CONSOLE_COLOR_RED;
 
+    combatGame->soundToPlay = "fireball";
 
     dungeon_attack attack = {};
     attack.t = 0.0f;
@@ -1235,8 +1356,10 @@ void updatePlayerAttack (combat_game *combatGame, game_input *input) {
             else if (stringsAreEqual(inputWord, "FREEZE")) {
                 combatGame->freeze = true;
                 combatGame->freezeTimer = 0.0f;
+                combatGame->soundToPlay = "freeze";
             }
             else if (stringsAreEqual(inputWord, "TELEPORT")) {
+                combatGame->soundToPlay = "teleport";
                 if (player->combatInfo.position.coords.x % 4 == 0) {
                     player->combatInfo.position.coords.y = 4;
                 }
@@ -1265,6 +1388,8 @@ void updatePlayerAttack (combat_game *combatGame, game_input *input) {
                 attack.t = 0.0f;
                 attack.ownerIsPlayer = true;
                 attack.ownerPos = player->combatInfo.position.coords;
+
+                combatGame->soundToPlay = "swing";
 
                 // TODO(ebuchholz): reconsider attack durations
                 switch (player->weaponType) {
@@ -1430,77 +1555,50 @@ void updateMonsterAttacks (combat_game *combatGame) {
                 } break;
                 case MONSTER_TYPE_DRAGON: {
                     // spawn fire
-                    monster->attackTimer += DELTA_TIME;
-                    while (monster->attackTimer >= 2.0f) {
-                        monster->attackTimer -= 2.0f;
-                    }
-
-                    if (monster->attackTimer < 1.5f) {
-                        if (player->combatInfo.position.coords.x < monster->combatInfo.position.coords.x) {
-                            // TODO(ebuchholz): different directions
-                            for (int y = 0; y < 3; ++y) {
-                                dungeon_attack attack = {};
-                                attack.t = 0.0f;
-                                attack.damage = 5;
-                                attack.duration = 5.0f;
-                                attack.ownerIsPlayer = false;
-
-                                dungeon_position pos = {};
-                                pos.coords.x = monster->combatInfo.position.coords.x - 1;
-                                pos.coords.y = monster->combatInfo.position.coords.y + y;
-
-                                spawnProjectile(combatGame, pos, Vector2(-1.0f, 0.0f) * FIRE_SPEED, 'Z', CONSOLE_COLOR_RED, attack);
-                            }
+                    if (!monster->phase2) {
+                        monster->moveTimer += DELTA_TIME;
+                        while (monster->moveTimer >= 4.0f) {
+                            monster->moveTimer -= 4.0f;
+                            monster->phase2 = true;
                         }
-                        else if (player->combatInfo.position.coords.x >= monster->combatInfo.position.coords.x &&
-                                 player->combatInfo.position.coords.x <= monster->combatInfo.position.coords.x + monster->hurtBox.max.x &&
-                                 player->combatInfo.position.coords.y < monster->combatInfo.position.coords.y) 
-                        {
-                            for (int x = 0; x < 6; ++x) {
-                                dungeon_attack attack = {};
-                                attack.t = 0.0f;
-                                attack.damage = 5;
-                                attack.duration = 5.0f;
-                                attack.ownerIsPlayer = false;
 
-                                dungeon_position pos = {};
-                                pos.coords.x = monster->combatInfo.position.coords.x + x;
-                                pos.coords.y = monster->combatInfo.position.coords.y - 1;
-
-                                spawnProjectile(combatGame, pos, Vector2(0.0f, -1.0f) * FIRE_SPEED, 'Z', CONSOLE_COLOR_RED, attack);
-                            }
+                        monster->attackTimer += DELTA_TIME;
+                        while (monster->attackTimer >= 2.0f) {
+                            monster->attackTimer -= 2.0f;
+                            combatGame->soundToPlay = "fire_breath";
                         }
-                        else if (player->combatInfo.position.coords.x >= monster->combatInfo.position.coords.x &&
-                                 player->combatInfo.position.coords.x <= monster->combatInfo.position.coords.x + monster->hurtBox.max.x &&
-                                 player->combatInfo.position.coords.y > monster->combatInfo.position.coords.y + monster->hurtBox.max.y)
-                        {
-                            for (int x = 0; x < 6; ++x) {
-                                dungeon_attack attack = {};
-                                attack.t = 0.0f;
-                                attack.damage = 5;
-                                attack.duration = 5.0f;
-                                attack.ownerIsPlayer = false;
 
-                                dungeon_position pos = {};
-                                pos.coords.x = monster->combatInfo.position.coords.x + x;
-                                pos.coords.y = monster->combatInfo.position.coords.y + (int)monster->hurtBox.max.y + 1;
+                        if (monster->attackTimer < 1.5f) {
+                            if (monster->combatInfo.facing == COMBAT_FACING_LEFT) {
+                                // TODO(ebuchholz): different directions
+                                for (int y = 0; y < 3; ++y) {
+                                    dungeon_attack attack = {};
+                                    attack.t = 0.0f;
+                                    attack.damage = 5;
+                                    attack.duration = 5.0f;
+                                    attack.ownerIsPlayer = false;
 
-                                spawnProjectile(combatGame, pos, Vector2(0.0f, 1.0f) * FIRE_SPEED, 'Z', CONSOLE_COLOR_RED, attack);
+                                    dungeon_position pos = {};
+                                    pos.coords.x = monster->combatInfo.position.coords.x - 1;
+                                    pos.coords.y = monster->combatInfo.position.coords.y + y;
+
+                                    spawnProjectile(combatGame, pos, Vector2(-1.0f, 0.0f) * FIRE_SPEED, 'Z', CONSOLE_COLOR_RED, attack);
+                                }
                             }
-                        }
-                        else {
-                            for (int y = 0; y < 3; ++y) {
-                                dungeon_attack attack = {};
-                                attack.t = 0.0f;
-                                attack.damage = 5;
-                                attack.duration = 5.0f;
-                                attack.ownerIsPlayer = false;
+                            else {
+                                for (int y = 0; y < 3; ++y) {
+                                    dungeon_attack attack = {};
+                                    attack.t = 0.0f;
+                                    attack.damage = 5;
+                                    attack.duration = 5.0f;
+                                    attack.ownerIsPlayer = false;
 
-                                dungeon_position pos = {};
-                                pos.coords.x = monster->combatInfo.position.coords.x + (int)monster->hurtBox.max.x + 1;
-                                pos.coords.y = monster->combatInfo.position.coords.y + y;
+                                    dungeon_position pos = {};
+                                    pos.coords.x = monster->combatInfo.position.coords.x + (int)monster->hurtBox.max.x + 1;
+                                    pos.coords.y = monster->combatInfo.position.coords.y + y;
 
-                                spawnProjectile(combatGame, pos, Vector2(1.0f, 0.0f) * FIRE_SPEED, 'Z', CONSOLE_COLOR_RED, attack);
+                                    spawnProjectile(combatGame, pos, Vector2(1.0f, 0.0f) * FIRE_SPEED, 'Z', CONSOLE_COLOR_RED, attack);
+                                }
                             }
                         }
                     }
@@ -1601,6 +1699,7 @@ monsterHitCheckDone:
                     if (hitMonster) {
                         attack->hit = true;
                         combatGame->lastHitMonster = monster;
+                        combatGame->soundToPlay = "hit";
 
                         monster->combatInfo.health -= attack->damage;
                         if (monster->combatInfo.health <= 0) {
@@ -1627,6 +1726,7 @@ monsterHitCheckDone:
                 if (hitPlayer) {
                     attack->hit = true;
                     player->combatInfo.health -= attack->damage;
+                    combatGame->soundToPlay = "hurt";
                     if (player->combatInfo.health <= 0) {
                         player->combatInfo.alive = false;
                     }
@@ -1778,10 +1878,22 @@ void updateActiveAttacks (combat_game *combatGame) {
 }
 
 void drawPlayer (combat_game *combatGame, console_drawer *drawer) {
+
+    static float hitStunTimer = 0.0f;
+    static float blink = false;
+    hitStunTimer += DELTA_TIME;
+    while (hitStunTimer > 0.05f) {
+        hitStunTimer -= 0.05f;
+        blink = !blink;
+    }
+
     drawer->color = CONSOLE_COLOR_GREEN;
     int offsetX = (COMBAT_ARENA_WIDTH - GAME_WIDTH) / 2;
     int offsetY = (COMBAT_ARENA_HEIGHT - GAME_HEIGHT) / 2;
     if (combatGame->player.combatInfo.alive) {
+        if (blink && combatGame->player.combatInfo.hitStunTime > 0.0f) {
+            drawer->color = CONSOLE_COLOR_RED;
+        }
         drawCharAtXY('@', combatGame->player.combatInfo.position.coords.x - offsetX, combatGame->player.combatInfo.position.coords.y - offsetY, drawer);
     }
     else {
@@ -1797,9 +1909,21 @@ void drawMonsters (combat_game *combatGame, console_drawer *drawer) {
     int offsetX = (COMBAT_ARENA_WIDTH - GAME_WIDTH) / 2;
     int offsetY = (COMBAT_ARENA_HEIGHT - GAME_HEIGHT) / 2;
 
+    static float hitStunTimer = 0.0f;
+    static float blink = false;
+    hitStunTimer += DELTA_TIME;
+    while (hitStunTimer > 0.05f) {
+        hitStunTimer -= 0.05f;
+        blink = !blink;
+    }
+
     dungeon_monster_list *monsters = &combatGame->monsters;
     for (int i = 0; i < monsters->numValues; ++i) {
         dungeon_monster *monster = &monsters->values[i];
+
+        if (blink && monster->combatInfo.hitStunTime > 0.0f) {
+            drawer->color = CONSOLE_COLOR_RED;
+        }
 
         switch (monster->type) {
             case MONSTER_TYPE_GOBLIN: {
@@ -2093,8 +2217,9 @@ void drawSpellbookText (combat_game *combatGame, console_drawer *drawer) {
 }
 
 
-bool updateCombatPhase (combat_game *combatGame, game_input *input, console_drawer *drawer, memory_arena *stringMemory, memory_arena *tempMemory) {
+bool updateCombatPhase (combat_game *combatGame, game_input *input, console_drawer *drawer, memory_arena *stringMemory, memory_arena *tempMemory, game_sounds *gameSounds, game_assets *assets) {
     bool endPhase = false;
+    combatGame->soundToPlay = 0;
     // update combat
     switch (combatGame->state) {
         case COMBAT_GAME_STATE_COMBAT: {
@@ -2168,6 +2293,10 @@ bool updateCombatPhase (combat_game *combatGame, game_input *input, console_draw
         case COMBAT_GAME_STATE_END: {
             drawGameEnd(combatGame, drawer);
         } break;
+    }
+
+    if (combatGame->soundToPlay != 0) {
+        playSound(combatGame->soundToPlay, gameSounds, assets);
     }
     return endPhase;
 }

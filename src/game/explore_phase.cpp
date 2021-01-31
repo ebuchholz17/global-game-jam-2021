@@ -248,6 +248,9 @@ explore_action processPlayerInput (explore_game *exploreGame) {
     else if (stringsAreEqual(inputWord, "READ")) {
         result.type = ACTION_TYPE_READ;
     }
+    else if (stringsAreEqual(inputWord, "HELP")) {
+        result.type = ACTION_TYPE_HELP;
+    }
     else {
         result.type = ACTION_TYPE_BAD_INPUT;
     }
@@ -320,7 +323,7 @@ void updateCurrentRoomDescription (explore_game *exploreGame, memory_arena *stri
                 monsterText = appendString(monsterText, " A giant snake slithers across your path!", stringMemory);
             } break;
             case MONSTER_TYPE_DRAGON: {
-                monsterText = appendString(monsterText, "A ferocious fire-breathing dragon is guarding its treasure!", stringMemory);
+                monsterText = appendString(monsterText, "Ferocious roars announce a fire-breathing dragon, guarding treasure!", stringMemory);
             } break;
         }
         exploreGame->currentStatusText = appendString(exploreGame->currentStatusText, monsterText, stringMemory);
@@ -376,6 +379,7 @@ void takeItemIfExists (explore_game *exploreGame, explore_action action, memory_
         if (item->equippable) {
             statusText = appendString("You pick up and equip the ", item->name, stringMemory);
             exploreGame->equippedItemID = item->id;
+            exploreGame->soundToPlay = "equip";
         }
         else {
             statusText = appendString("You pick up the ", item->name, stringMemory);
@@ -442,6 +446,7 @@ findItemLoopDone:
         dungeon_item *item = &exploreGame->allItems.values[foundItemID];
         if (item->equippable) {
             exploreGame->equippedItemID = foundItemID;
+            exploreGame->soundToPlay = "equip";
             char *equipText = appendString("You equip the ", item->name, stringMemory); 
             equipText = appendString(equipText, ".", stringMemory);
 
@@ -503,6 +508,23 @@ void tryRead (explore_game *exploreGame, memory_arena *stringMemory) {
     }
 }
 
+void showHelp (explore_game *exploreGame, memory_arena *stringMemory) {
+    exploreGame->currentStatusText = R"room(Try typing the following commands:
+
+LOOK                               (examine your surroundings)
+NORTH, SOUTH, EAST, WEST, UP, DOWN (move to a new room)
+TAKE                               (take an item in the room)
+INVENTORY                          (check your inventory)
+EQUIP [item]                       (equip an item in your inventory)
+READ                               (read something in the room)
+OPEN                               (open a chest in the room)
+HELP                               (show this help screen)
+
+In combat, try these keys: 
+Arrow keys
+Z)room";
+}
+
 void doExploreAction (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
     switch (action.type) {
         case ACTION_TYPE_LOOK: {
@@ -522,6 +544,9 @@ void doExploreAction (explore_game *exploreGame, explore_action action, memory_a
         case ACTION_TYPE_READ: {
            tryRead(exploreGame, stringMemory);
         } break;
+        case ACTION_TYPE_HELP: {
+           showHelp(exploreGame, stringMemory);
+        } break;
         case ACTION_TYPE_TAKE_ITEM: {
            takeItemIfExists(exploreGame, action, stringMemory);
         } break;
@@ -538,8 +563,9 @@ void doExploreAction (explore_game *exploreGame, explore_action action, memory_a
     exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
 }
 
-bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_drawer *drawer, memory_arena *stringMemory) {
+bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_drawer *drawer, memory_arena *stringMemory, game_sounds *gameSounds, game_assets *assets) {
     drawTitleText(exploreGame, drawer);
+    exploreGame->soundToPlay = 0;
 
     bool readyToFight = false;
 
@@ -563,6 +589,7 @@ bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_d
                 drawFightText(exploreGame, drawer);
 
                 if (input->enterKey.justPressed) {
+                    exploreGame->soundToPlay = "battle_start";
                     readyToFight = true;
                 }
             }
@@ -614,6 +641,9 @@ bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_d
         } break;
     }
 
+    if (exploreGame->soundToPlay != 0) {
+        playSound(exploreGame->soundToPlay, gameSounds, assets);
+    }
     return readyToFight;
 }
 

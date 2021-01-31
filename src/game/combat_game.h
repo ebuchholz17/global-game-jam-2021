@@ -7,6 +7,7 @@
 #define PLAYER_SPEED 10.0f
 #define GOBLIN_SPEED 8.0f
 #define SNAKE_SPEED 30.0f
+#define SNAKE_CHARGE_SPEED 60.0f
 #define DRAGON_ACCELERATION 10.0f
 #define FIRE_SPEED 50.0f
 #define ARROW_SPEED 50.0f
@@ -83,7 +84,11 @@ struct dungeon_monster {
     aabb hurtBox; // dragon only
     dungeon_point_list segments; // snake only
     float timer;
+    float moveTimer;
     float attackTimer;
+
+    bool phase2;
+    bool leftSide;
 };
 #define LIST_TYPE dungeon_monster
 #include "list.h"
@@ -145,6 +150,8 @@ struct combat_game {
 
     bool freeze;
     float freezeTimer;
+
+    char *soundToPlay;
 };
 
 #endif 
