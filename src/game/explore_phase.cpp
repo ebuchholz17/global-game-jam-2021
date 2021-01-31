@@ -13,22 +13,11 @@ int stringLength (char *string) {
 }
 
 void initExplorePhase (explore_game *exploreGame, memory_arena *memory) {
-    char *titleText = R"room(Welcome!)room";
-    char *introText = R"room(You have stumbled upon the ruins of a great castle, its glory days 
-long-past. You can feel the magic in the air. Your thoughts seem to 
-have a certain... "tangibility" here. But focus on the task at hand!
-
-Lost treasures await within if you can brave the dangers. But can 
-you find the exit?
-
-Press ENTER to continue.)room";
-
     buildItems(exploreGame, memory);
     buildRooms(exploreGame, memory);
-    exploreGame->currentRoom = &exploreGame->allRooms.values[0]; // QQQ
-    exploreGame->currentTitleText = titleText;
-    exploreGame->currentStatusText = introText;
-    exploreGame->isIntro = true;
+    exploreGame->currentRoom = &exploreGame->allRooms.values[0];
+    exploreGame->isTitle = true;
+    exploreGame->isIntro = false;
     exploreGame->revealTime = 0.0f;
     exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
 
@@ -248,6 +237,10 @@ explore_action processPlayerInput (explore_game *exploreGame) {
     else if (stringsAreEqual(inputWord, "READ")) {
         result.type = ACTION_TYPE_READ;
     }
+    else if (stringsAreEqual(inputWord, "EXAMINE")) {
+        result.type = ACTION_TYPE_EXAMINE_ITEM;
+        readRestOfLine(cursor + 1, result.target, exploreGame->numTypedLetters - stringLength(inputWord) - 1);
+    }
     else if (stringsAreEqual(inputWord, "HELP")) {
         result.type = ACTION_TYPE_HELP;
     }
@@ -466,6 +459,36 @@ findItemLoopDone:
     }
 }
 
+void examineItem (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
+    int foundItemID = -1;
+
+    for (int i = 0; i < exploreGame->inventory.numValues; ++i) {
+        int itemID = exploreGame->inventory.values[i];
+        dungeon_item *item = &exploreGame->allItems.values[itemID];
+        for (int j = 0; j < item->alternateNames.numValues; ++j) {
+            char *itemName = item->alternateNames.values[j];
+            if (stringsAreEqual(action.target, itemName)) {
+                foundItemID = itemID;
+                goto findItemLoopDone;
+            }
+        }
+    }
+findItemLoopDone:
+
+    if (foundItemID != -1) {
+        dungeon_item *item = &exploreGame->allItems.values[foundItemID];
+
+        exploreGame->currentStatusText = item->description;
+    }
+    else {
+        char *equipText = appendString("You don't have a ", action.target, stringMemory); 
+        equipText = appendString(equipText, ".", stringMemory);
+
+        copyDescriptionToBuffer(equipText, exploreGame->descriptionBuffer);
+        exploreGame->currentStatusText = exploreGame->descriptionBuffer;
+    }
+}
+
 void tryOpenChest (explore_game *exploreGame, memory_arena *stringMemory) {
     if (exploreGame->currentRoom->hasChest) {
 
@@ -516,13 +539,19 @@ NORTH, SOUTH, EAST, WEST, UP, DOWN (move to a new room)
 TAKE                               (take an item in the room)
 INVENTORY                          (check your inventory)
 EQUIP [item]                       (equip an item in your inventory)
+EXAMINE [item]                     (examine an inventory item)
 READ                               (read something in the room)
 OPEN                               (open a chest in the room)
 HELP                               (show this help screen)
 
+Also, you can press ENTER to skip revealing the text.
+
 In combat, try these keys: 
 Arrow keys
-Z)room";
+Z
+
+If the text is hard to read, try resizing the window, or adjusting
+your console settings (Right click title bar -> Properties).)room";
 }
 
 void doExploreAction (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
@@ -544,6 +573,9 @@ void doExploreAction (explore_game *exploreGame, explore_action action, memory_a
         case ACTION_TYPE_READ: {
            tryRead(exploreGame, stringMemory);
         } break;
+        case ACTION_TYPE_EXAMINE_ITEM: {
+           examineItem(exploreGame, action, stringMemory);
+        } break;
         case ACTION_TYPE_HELP: {
            showHelp(exploreGame, stringMemory);
         } break;
@@ -563,8 +595,53 @@ void doExploreAction (explore_game *exploreGame, explore_action action, memory_a
     exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
 }
 
+void showTitle (explore_game *exploreGame){
+    exploreGame->currentTitleText = "";
+    char *titleText = R"room(
+      _          _   _            _                            
+     | |        | | | |          | |                           
+     | |     ___| |_| |_ ___ _ __| |__   ___  _ __ _ __   ___  
+     | |    / _ \ __| __/ _ \ '__| '_ \ / _ \| '__| '_ \ / _ \ 
+     | |___|  __/ |_| ||  __/ |  | |_) | (_) | |  | | | |  __/ 
+     |______\___|\__|\__\___|_|  |_.__/ \___/|_|  |_| |_|\___| 
+                  / ____|        | | | |                       
+                 | |     __ _ ___| |_| | ___                   
+                 | |    / _` / __| __| |/ _ \                  
+                 | |___| (_| \__ \ |_| |  __/                  
+                  \_____\__,_|___/\__|_|\___|                  
+
+
+                     Press ENTER to start.
+)room";
+    exploreGame->currentStatusText = titleText;
+}
+
+void showWelcome (explore_game *exploreGame){
+    char *titleText = R"room(Welcome!)room";
+    char *introText = R"room(You have stumbled upon the ruins of a great castle, its glory days 
+long-past. You can feel the magic in the air. Your thoughts seem to 
+have a certain... "tangibility" here. But focus on the task at hand!
+
+Lost treasures await within if you can brave the dangers. But can 
+you find the exit?
+
+Press ENTER to continue.)room";
+
+    exploreGame->currentTitleText = titleText;
+    exploreGame->currentStatusText = introText;
+}
+
 bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_drawer *drawer, memory_arena *stringMemory, game_sounds *gameSounds, game_assets *assets) {
-    drawTitleText(exploreGame, drawer);
+    if (exploreGame->isTitle) {
+        showTitle(exploreGame);
+    }
+    else if (exploreGame->isIntro) {
+        drawTitleText(exploreGame, drawer);
+        showWelcome(exploreGame);
+    }
+    else {
+        drawTitleText(exploreGame, drawer);
+    }
     exploreGame->soundToPlay = 0;
 
     bool readyToFight = false;
@@ -596,7 +673,12 @@ bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_d
             else if (exploreGame->justLost) {
                 bool playerHitEnter = updatePlayerInput(exploreGame, input, drawer);
                 if (playerHitEnter) {
-                    if (exploreGame->isIntro) {
+                    if (exploreGame->isTitle) {
+                        exploreGame->isTitle = false;
+                        exploreGame->isIntro = true;
+                        exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
+                    }
+                    else if (exploreGame->isIntro) {
                         exploreGame->isIntro = false;
                         updateCurrentRoomDescription(exploreGame, stringMemory);
                         exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
@@ -624,7 +706,12 @@ bool updateExplorePhase (explore_game *exploreGame, game_input *input, console_d
                 bool playerHitEnter = updatePlayerInput(exploreGame, input, drawer);
 
                 if (playerHitEnter) {
-                    if (exploreGame->isIntro) {
+                    if (exploreGame->isTitle) {
+                        exploreGame->isTitle = false;
+                        exploreGame->isIntro = true;
+                        exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;
+                    }
+                    else if (exploreGame->isIntro) {
                         exploreGame->isIntro = false;
                         updateCurrentRoomDescription(exploreGame, stringMemory);
                         exploreGame->state = EXPLORE_STATE_REVEAL_TEXT;

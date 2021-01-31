@@ -67,7 +67,7 @@ enum action_type {
     ACTION_TYPE_TAKE_ITEM,
     ACTION_TYPE_CHECK_INVENTORY, 
     ACTION_TYPE_EQUIP,
-    ACTION_TYPE_EXAMINE_ITEM, // TODO
+    ACTION_TYPE_EXAMINE_ITEM,
     ACTION_TYPE_READ,
     ACTION_TYPE_OPEN_CHEST,
     ACTION_TYPE_HELP,
@@ -98,6 +98,7 @@ struct explore_game {
     int equippedItemID;
 
     bool isIntro;
+    bool isTitle;
     char *currentTitleText;
     char *currentStatusText;
 

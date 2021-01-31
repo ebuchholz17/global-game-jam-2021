@@ -9,7 +9,7 @@ dungeon_monster buildMonster (monster_type type, memory_arena *memory) {
         } break;
         case MONSTER_TYPE_GIANT_SNAKE: {
             result.name = "Giant Snake";
-            result.combatInfo.health = 100;
+            result.combatInfo.health = 350;
             result.segments = dungeon_pointListInit(memory, 40);
             for (int i = 0; i < 40; ++i) {
                 dungeon_point segment = {};
@@ -18,7 +18,7 @@ dungeon_monster buildMonster (monster_type type, memory_arena *memory) {
         } break;
         case MONSTER_TYPE_DRAGON: {
             result.name = "Dragon";
-            result.combatInfo.health = 100;
+            result.combatInfo.health = 350;
             result.combatInfo.facing = COMBAT_FACING_LEFT;
             result.attackTimer = 1.9f;
             result.hurtBox = {};
@@ -1236,8 +1236,8 @@ void spawnFireball (combat_game *combatGame) {
 
     dungeon_attack attack = {};
     attack.t = 0.0f;
-    attack.damage = 25;
-    attack.duration = 5.0f;
+    attack.damage = 60;
+    attack.duration = 3.0f;
     attack.ownerPos = projectile.pos.coords;
     attack.ownerIsPlayer = true;
 
@@ -1278,7 +1278,7 @@ void spawnArrow (combat_game *combatGame) {
 
     dungeon_attack attack = {};
     attack.t = 0.0f;
-    attack.damage = 12;
+    attack.damage = 18;
     attack.duration = 1.0f;
     attack.ownerIsPlayer = true;
 
@@ -1504,7 +1504,7 @@ void updateMonsterAttacks (combat_game *combatGame) {
                         {
                             dungeon_attack attack = {};
                             attack.t = 0.0f;
-                            attack.damage = 20;
+                            attack.damage = 15;
                             attack.duration = 0.0001f;
                             attack.ownerIsPlayer = false;
                             attack.ownerPos = *segment;
@@ -1902,10 +1902,6 @@ void drawPlayer (combat_game *combatGame, console_drawer *drawer) {
 }
 
 void drawMonsters (combat_game *combatGame, console_drawer *drawer) {
-    drawer->color = CONSOLE_COLOR_YELLOW;
-    if (combatGame->freeze) {
-        drawer->color = CONSOLE_COLOR_CYAN;
-    }
     int offsetX = (COMBAT_ARENA_WIDTH - GAME_WIDTH) / 2;
     int offsetY = (COMBAT_ARENA_HEIGHT - GAME_HEIGHT) / 2;
 
@@ -1921,6 +1917,10 @@ void drawMonsters (combat_game *combatGame, console_drawer *drawer) {
     for (int i = 0; i < monsters->numValues; ++i) {
         dungeon_monster *monster = &monsters->values[i];
 
+        drawer->color = CONSOLE_COLOR_YELLOW;
+        if (combatGame->freeze) {
+            drawer->color = CONSOLE_COLOR_CYAN;
+        }
         if (blink && monster->combatInfo.hitStunTime > 0.0f) {
             drawer->color = CONSOLE_COLOR_RED;
         }

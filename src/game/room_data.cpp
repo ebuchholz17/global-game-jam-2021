@@ -20,7 +20,7 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         item.id = 1;
         item.name = "Longsword";
         item.description = "This long steel sword must be almost four feet long.";
-        item.roomDescription = "You see the glint of a steel longsword hidden among the rose bushes.";
+        item.roomDescription = "You catch the glint of a longsword stashed on a shelf.";
         item.equippable = true;
         item.weaponType = WEAPON_TYPE_SWORD;
 
@@ -52,7 +52,7 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         dungeon_item item = {};
         item.id = 3;
         item.name = "Magic Bracelet";
-        item.description = "A gold bangle emanting a magical energy engraved with the name: \"Sou-ko Ba'an\""; 
+        item.description = "A gold bangle emanting a magical energy engraved with the name:\n\"Sou-ko Ba'an\""; 
         item.roomDescription = "Secreted away in the corner is a magic bracelet, upon a pedestal....\nYou could reach it if you could navigate through the tables.";
         item.equippable = false;
 
@@ -476,7 +476,7 @@ and silverware at the foot of a door to the west.
 To the north is a shattered window that you can climb through, but
 it seems like a steep drop, so you may not be able to climb back
 through.)room";
-        room.itemID = 1;
+        room.itemID = -1;
 
         room.exits = room_exitListInit(memory, 6);
         {
@@ -506,7 +506,8 @@ through.)room";
         room.title = "Kitchen";
         room.description = R"room(This is the castle's kitchen, judging by the arrangement of tables,
 cabinets, and ovens. An entryway on the east side leads to the 
-castle courtyard. You also see a door to the north.
+castle courtyard. You also see a door to the north, and a pantry
+door to the south.
 
 The room is in a disorderly state, pots and pans strewn all over...
 
@@ -536,6 +537,12 @@ cooking.)room";
             room_exit exit = {};
             exit.connectedRoomID = 12;
             exit.direction = ROOM_EXIT_DIRECTION_NORTH;
+            listPush(&room.exits, exit);
+        }
+        {
+            room_exit exit = {};
+            exit.connectedRoomID = 16;
+            exit.direction = ROOM_EXIT_DIRECTION_SOUTH;
             listPush(&room.exits, exit);
         }
 
@@ -653,12 +660,12 @@ down, but it would be impossible to climb back up.)room";
 and tattered tapetries. The stained glass windows are shattered, a
 charcoal-black blanket of ash covers the room. South is an entryway.
                                              over
-        F                            turned         t
-        o                                           o
+        F                            turned            t
+        o                                              o
         r                t
-              reason,    h    t                serve
-                         e    a                        a
-         s                    b                        s
+              reason,    h    t                     serve
+                         e    a                            a            
+         s                    b                            s
          o                    l  a
          m                    e   r
          e                    s    e
@@ -674,6 +681,26 @@ charcoal-black blanket of ash covers the room. South is an entryway.
             room_exit exit = {};
             exit.connectedRoomID = 13;
             exit.direction = ROOM_EXIT_DIRECTION_SOUTH;
+            listPush(&room.exits, exit);
+        }
+
+        listPush(&exploreGame->allRooms, room);
+    }
+    {
+        dungeon_room room = {};
+        room.id = 16;
+        room.title = "Pantry";
+        room.description = R"room(This is a narrow closet housing long-deteriorated foodstuff. The 
+broken glass of fallen jars covers the floor.
+
+You can go back into the kitchen through the northern door.)room";
+        room.itemID = 1;
+
+        room.exits = room_exitListInit(memory, 6);
+        {
+            room_exit exit = {};
+            exit.connectedRoomID = 11;
+            exit.direction = ROOM_EXIT_DIRECTION_NORTH;
             listPush(&room.exits, exit);
         }
 
