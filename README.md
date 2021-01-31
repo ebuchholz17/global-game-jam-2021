@@ -1,4 +1,4 @@
-- [Download and unzip this file to play](https://github.com/ebuchholz17/global-game-jam-2021/blob/master/release/v1.0.0.zip)
+- [Download and unzip this file to play](https://github.com/ebuchholz17/global-game-jam-2021/blob/master/release/v1.0.1.zip)
 ```
       _          _   _            _                            
      | |        | | | |          | |                           

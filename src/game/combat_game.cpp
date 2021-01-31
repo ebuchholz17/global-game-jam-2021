@@ -20,7 +20,7 @@ dungeon_monster buildMonster (monster_type type, memory_arena *memory) {
             result.name = "Dragon";
             result.combatInfo.health = 350;
             result.combatInfo.facing = COMBAT_FACING_LEFT;
-            result.attackTimer = 1.9f;
+            result.attackTimer = 3.9f;
             result.hurtBox = {};
             result.hurtBox.min.x = 0;
             result.hurtBox.min.y = 0;
@@ -737,10 +737,10 @@ void updateSnakePosition (combat_game *combatGame, dungeon_monster *monster, mem
     }
 
     monster->timer += DELTA_TIME;
-    while (monster->timer >= 2.5f) {
-        monster->timer -= 2.5f;
+    while (monster->timer >= 5.0f) {
+        monster->timer -= 5.0f;
     }
-    if (monster->timer > 2.0f) {
+    if (monster->timer > 4.0f) {
         dungeon_player *player = &combatGame->player;
         dungeon_point playerPos = player->combatInfo.position.coords;
         dungeon_point nextPoint = getFirstPointOnPathToTarget(combatGame, newPos.coords, playerPos, tempMemory);
@@ -923,7 +923,7 @@ void updateDragonPosition (combat_game *combatGame, dungeon_monster *monster) {
     dungeon_position newPos = monster->combatInfo.position;
 
     if (monster->phase2) {
-        float flyDuration = 0.5f;
+        float flyDuration = 1.0f;
         monster->moveTimer += DELTA_TIME;
 
         if (monster->moveTimer >= flyDuration) {
@@ -967,7 +967,7 @@ void updateDragonPosition (combat_game *combatGame, dungeon_monster *monster) {
         }
 
         monster->timer += DELTA_TIME;
-        float yVelocity = cosf(2.0f * monster->timer) * DRAGON_ACCELERATION;
+        float yVelocity = cosf(1.0f * monster->timer) * DRAGON_ACCELERATION;
 
         newPos.subY += yVelocity * DELTA_TIME;
         while (newPos.subY <= -1.0f) {
@@ -1010,7 +1010,7 @@ void updateMonsterPositions (combat_game *combatGame, memory_arena *tempMemory) 
 }
 
 void buildUnarmedAttack (combat_info *combatInfo, dungeon_attack *attack) {
-    combatInfo->cooldownDuration = 0.2f;
+    combatInfo->cooldownDuration = 0.4f;
     attack->duration = combatInfo->cooldownDuration;
     attack->damage = 8;
 
@@ -1038,8 +1038,8 @@ void buildUnarmedAttack (combat_info *combatInfo, dungeon_attack *attack) {
 }
 
 void buildDaggerAttack (combat_game *combatGame, combat_info *combatInfo, dungeon_attack *attack) {
-    combatInfo->cooldownDuration = 0.1f;
-    attack->duration = 0.1f;
+    combatInfo->cooldownDuration = 0.2f;
+    attack->duration = 0.2f;
     attack->damage = 13;
 
     dungeon_point hitBox = {};
@@ -1091,8 +1091,8 @@ void buildDaggerAttack (combat_game *combatGame, combat_info *combatInfo, dungeo
 }
 
 void buildSwordAttack (combat_game *combatGame, combat_info *combatInfo, dungeon_attack *attack) {
-    combatInfo->cooldownDuration = 0.15f;
-    attack->duration = 0.1f;
+    combatInfo->cooldownDuration = 0.3f;
+    attack->duration = 0.2f;
     attack->damage = 22;
 
     switch (combatInfo->facing) {
@@ -1237,7 +1237,7 @@ void spawnFireball (combat_game *combatGame) {
     dungeon_attack attack = {};
     attack.t = 0.0f;
     attack.damage = 60;
-    attack.duration = 3.0f;
+    attack.duration = 5.0f;
     attack.ownerPos = projectile.pos.coords;
     attack.ownerIsPlayer = true;
 
@@ -1274,12 +1274,12 @@ void spawnFireball (combat_game *combatGame) {
 
 void spawnArrow (combat_game *combatGame) {
     dungeon_player *player = &combatGame->player;
-    player->combatInfo.cooldownDuration = 0.2f;
+    player->combatInfo.cooldownDuration = 0.4f;
 
     dungeon_attack attack = {};
     attack.t = 0.0f;
     attack.damage = 18;
-    attack.duration = 1.0f;
+    attack.duration = 2.0f;
     attack.ownerIsPlayer = true;
 
     dungeon_position pos = {};
@@ -1489,7 +1489,7 @@ void updateMonsterAttacks (combat_game *combatGame) {
 
                         // hack it to be weaker
                         attack.damage = 8;
-                        monster->combatInfo.cooldownRemaining = 0.5f;
+                        monster->combatInfo.cooldownRemaining = 1.0f;
 
                         listPush(&combatGame->activeAttacks, attack);
                     }
@@ -1557,25 +1557,25 @@ void updateMonsterAttacks (combat_game *combatGame) {
                     // spawn fire
                     if (!monster->phase2) {
                         monster->moveTimer += DELTA_TIME;
-                        while (monster->moveTimer >= 4.0f) {
-                            monster->moveTimer -= 4.0f;
+                        while (monster->moveTimer >= 8.0f) {
+                            monster->moveTimer -= 8.0f;
                             monster->phase2 = true;
                         }
 
                         monster->attackTimer += DELTA_TIME;
-                        while (monster->attackTimer >= 2.0f) {
-                            monster->attackTimer -= 2.0f;
+                        while (monster->attackTimer >= 4.0f) {
+                            monster->attackTimer -= 4.0f;
                             combatGame->soundToPlay = "fire_breath";
                         }
 
-                        if (monster->attackTimer < 1.5f) {
+                        if (monster->attackTimer < 3.0f) {
                             if (monster->combatInfo.facing == COMBAT_FACING_LEFT) {
                                 // TODO(ebuchholz): different directions
                                 for (int y = 0; y < 3; ++y) {
                                     dungeon_attack attack = {};
                                     attack.t = 0.0f;
                                     attack.damage = 5;
-                                    attack.duration = 5.0f;
+                                    attack.duration = 10.0f;
                                     attack.ownerIsPlayer = false;
 
                                     dungeon_position pos = {};
@@ -1590,7 +1590,7 @@ void updateMonsterAttacks (combat_game *combatGame) {
                                     dungeon_attack attack = {};
                                     attack.t = 0.0f;
                                     attack.damage = 5;
-                                    attack.duration = 5.0f;
+                                    attack.duration = 10.0f;
                                     attack.ownerIsPlayer = false;
 
                                     dungeon_position pos = {};
@@ -1706,7 +1706,7 @@ monsterHitCheckDone:
                             monster->combatInfo.alive = false;
                         }
                         else {
-                            monster->combatInfo.hitStunTime = 0.1f;
+                            monster->combatInfo.hitStunTime = 0.2f;
                             if (monster->type == MONSTER_TYPE_GOBLIN) {
                                 vector2 knockbackDir = Vector2((float)monster->combatInfo.position.coords.x, (float)monster->combatInfo.position.coords.y) -  
                                                        Vector2((float)player->combatInfo.position.coords.x, (float)player->combatInfo.position.coords.y);
@@ -1731,7 +1731,7 @@ monsterHitCheckDone:
                         player->combatInfo.alive = false;
                     }
                     else {
-                        player->combatInfo.hitStunTime = 0.1f;
+                        player->combatInfo.hitStunTime = 0.2f;
                         vector2 knockbackDir = Vector2((float)player->combatInfo.position.coords.x, (float)player->combatInfo.position.coords.y) -  
                                                Vector2((float)attack->ownerPos.x, (float)attack->ownerPos.y);
                         knockbackDir = normalize(knockbackDir);
@@ -1882,8 +1882,8 @@ void drawPlayer (combat_game *combatGame, console_drawer *drawer) {
     static float hitStunTimer = 0.0f;
     static float blink = false;
     hitStunTimer += DELTA_TIME;
-    while (hitStunTimer > 0.05f) {
-        hitStunTimer -= 0.05f;
+    while (hitStunTimer > 0.15f) {
+        hitStunTimer -= 0.15f;
         blink = !blink;
     }
 
@@ -1908,8 +1908,8 @@ void drawMonsters (combat_game *combatGame, console_drawer *drawer) {
     static float hitStunTimer = 0.0f;
     static float blink = false;
     hitStunTimer += DELTA_TIME;
-    while (hitStunTimer > 0.05f) {
-        hitStunTimer -= 0.05f;
+    while (hitStunTimer > 0.15f) {
+        hitStunTimer -= 0.15f;
         blink = !blink;
     }
 
@@ -2048,7 +2048,7 @@ void drawGameEnd (combat_game *combatGame, console_drawer *drawer) {
     }
 
     combatGame->endMessageTimer += DELTA_TIME;
-    float revealPercent = combatGame->endMessageTimer / 0.5f;
+    float revealPercent = combatGame->endMessageTimer / 1.0f;
     int numLettersRevealed;
     if (revealPercent >= 1.0f) {
         numLettersRevealed = stringLength(endMessage);
@@ -2118,9 +2118,9 @@ void drawPlayerAttack (combat_game *combatGame, console_drawer *drawer) {
             }
         } break;
         case WEAPON_TYPE_SWORD: {
-            float swingTime = player->combatInfo.cooldownRemaining - 0.05f;
+            float swingTime = player->combatInfo.cooldownRemaining - 0.1f;
             if (swingTime > 0.0f) {
-                if (swingTime > 0.067f) {
+                if (swingTime > 0.133f) {
                     switch (player->combatInfo.facing) {
                         case COMBAT_FACING_UP: {
                             drawCharAtXY('\\', playerPos.x - 1 - offsetX, playerPos.y - 1 - offsetY, drawer);
@@ -2144,7 +2144,7 @@ void drawPlayerAttack (combat_game *combatGame, console_drawer *drawer) {
                         } break;
                     }
                 }
-                else if (swingTime > 0.033f) {
+                else if (swingTime > 0.067f) {
                     switch (player->combatInfo.facing) {
                         case COMBAT_FACING_UP: {
                             drawCharAtXY('|', playerPos.x - offsetX, playerPos.y - 1 - offsetY, drawer);
@@ -2206,8 +2206,8 @@ void drawSpellbookText (combat_game *combatGame, console_drawer *drawer) {
     static float blinkTimer = 0.0f;
 
     blinkTimer += DELTA_TIME;
-    while (blinkTimer >= 0.15f) {
-        blinkTimer -= 0.15f;
+    while (blinkTimer >= 0.3f) {
+        blinkTimer -= 0.3f;
         blinkOn = !blinkOn;
     }
 
@@ -2230,8 +2230,8 @@ bool updateCombatPhase (combat_game *combatGame, game_input *input, console_draw
 
             if (combatGame->freeze) {
                 combatGame->freezeTimer += DELTA_TIME;
-                while (combatGame->freezeTimer >= 2.0f) {
-                    combatGame->freezeTimer -= 2.0f;
+                while (combatGame->freezeTimer >= 4.0f) {
+                    combatGame->freezeTimer -= 4.0f;
                     combatGame->freeze = false;
                 }
             }

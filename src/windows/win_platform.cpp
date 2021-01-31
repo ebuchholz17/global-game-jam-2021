@@ -279,6 +279,8 @@ int WINAPI WinMain (HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLin
     LARGE_INTEGER lastControllerCheckTime = lastCounter;
     startWinConsoleFrame(&winConsole);
 
+    beginPreciseWindowsTiming();
+
     programRunning = true;
     while (programRunning) {
         // reset input
@@ -402,11 +404,21 @@ int WINAPI WinMain (HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLin
         clearWinConsoleWindow(winConsoleWindow);
 
         // start new frame
+
+        //LARGE_INTEGER workCounter;
+        //QueryPerformanceCounter(&workCounter);
+        //long long counterElapsed = workCounter.QuadPart - lastCounter.QuadPart;
+        //float elapsedMS = (1000.0f * (float)counterElapsed) / (float)perfCountFrequency;
+        //char floatText[255];
+        //sprintf_s(floatText, 255, "%f\n", elapsedMS);
+        //OutputDebugString(floatText);
+
         QueryPerformanceCounter(&lastCounter);
         startWinConsoleFrame(&winConsole);
     }
 
     FreeConsole();
+    endPreciseWindowsTiming();
 
     return 0;
 }
