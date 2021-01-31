@@ -69,7 +69,7 @@ void buildItems (explore_game *exploreGame, memory_arena *memory) {
         item.id = 4;
         item.name = "Rune-engraved Key";
         item.description = "A metal key glowing with runic inscriptions."; 
-        item.roomDescription = "At your feet, dangerously close to tumbling off the edge, is a small key.";
+        item.roomDescription = "At your feet, dangerously close to tumbling off the edge, is a small\nkey.";
         item.equippable = false;
 
         item.alternateNames = charPtrListInit(memory, 10);
@@ -391,6 +391,7 @@ crawlies.                                             monsters here.)room";
         room.title = "Library: Upper Level";
         room.description = R"room()room";
         room.itemID = -1;
+        room.hasChest = true;
 
         room.exits = room_exitListInit(memory, 6);
         {

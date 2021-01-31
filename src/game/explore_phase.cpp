@@ -242,6 +242,9 @@ explore_action processPlayerInput (explore_game *exploreGame) {
     else if (parseMoveAction(inputWord, cursor, exploreGame->numTypedLetters - stringLength(inputWord), &result)) {
         result.type = ACTION_TYPE_MOVE;
     }
+    else if (stringsAreEqual(inputWord, "OPEN") || stringsAreEqual(inputWord, "UNLOCK")) {
+        result.type = ACTION_TYPE_OPEN_CHEST;
+    }
     else {
         result.type = ACTION_TYPE_BAD_INPUT;
     }
@@ -321,6 +324,13 @@ void updateCurrentRoomDescription (explore_game *exploreGame, memory_arena *stri
         copyToDescriptionBuffer = true;
     }
 
+    if (exploreGame->currentRoom->hasChest && !exploreGame->currentRoom->chestOpen) {
+        char *chestText = "\n\n";
+        chestText = appendString(chestText, "There is a treasure chest here, covered in glowing runic symbols.", stringMemory);
+        exploreGame->currentStatusText = appendString(exploreGame->currentStatusText, chestText, stringMemory);
+        copyToDescriptionBuffer = true;
+    }
+
     if (copyToDescriptionBuffer) {
         copyDescriptionToBuffer(exploreGame->currentStatusText, exploreGame->descriptionBuffer);
         exploreGame->currentStatusText = exploreGame->descriptionBuffer;
@@ -359,7 +369,14 @@ void moveToRoom (explore_game *exploreGame, explore_action action, memory_arena 
 void takeItemIfExists (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
     if (exploreGame->currentRoom->itemID != -1) {
         dungeon_item *item = &exploreGame->allItems.values[exploreGame->currentRoom->itemID];
-        char *statusText = appendString("You pick up the ", item->name, stringMemory);
+        char *statusText;
+        if (item->equippable) {
+            statusText = appendString("You pick up and equip the ", item->name, stringMemory);
+            exploreGame->equippedItemID = item->id;
+        }
+        else {
+            statusText = appendString("You pick up the ", item->name, stringMemory);
+        }
         statusText = appendString(statusText, ".", stringMemory);
         copyDescriptionToBuffer(statusText, exploreGame->descriptionBuffer);
         exploreGame->currentStatusText = exploreGame->descriptionBuffer;
@@ -441,6 +458,42 @@ findItemLoopDone:
     }
 }
 
+void tryOpenChest (explore_game *exploreGame, memory_arena *stringMemory) {
+    if (exploreGame->currentRoom->hasChest) {
+
+        bool haveKey = false;
+        for (int i = 0; i < exploreGame->inventory.numValues; ++i) {
+            int itemID = exploreGame->inventory.values[i];
+            dungeon_item *item = &exploreGame->allItems.values[itemID];
+
+            // 4 = key
+            if (item->id == 4) {
+                haveKey = true;
+                break;
+            }
+        }
+
+        if (haveKey) {
+            exploreGame->currentStatusText = R"room(Your key slips into the lock and with a satisfying click, the chest 
+opens.
+
+Inside the chest is a leatherbound book. You can't understand the 
+writing inside, but you figure it's probably valuable, so you take 
+it and equip it.)room";
+                // 5 = spellbook
+            listPush(&exploreGame->inventory, 5);
+            exploreGame->equippedItemID = 5;
+            exploreGame->currentRoom->hasChest = false;
+        }
+        else {
+            exploreGame->currentStatusText = "The chest is locked.";
+        }
+    }
+    else {
+        exploreGame->currentStatusText = "There is nothing to open here.";
+    }
+}
+
 void doExploreAction (explore_game *exploreGame, explore_action action, memory_arena *stringMemory) {
     switch (action.type) {
         case ACTION_TYPE_LOOK: {
@@ -453,6 +506,9 @@ void doExploreAction (explore_game *exploreGame, explore_action action, memory_a
            {
                exploreGame->aboutToFight = true;
            }
+        } break;
+        case ACTION_TYPE_OPEN_CHEST: {
+           tryOpenChest(exploreGame, stringMemory);
         } break;
         case ACTION_TYPE_TAKE_ITEM: {
            takeItemIfExists(exploreGame, action, stringMemory);

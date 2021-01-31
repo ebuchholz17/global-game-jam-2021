@@ -140,6 +140,9 @@ struct combat_game {
 
     int numTypedLetters;
     char currentText[MAX_TEXT_INPUT_LENGTH];
+
+    bool freeze;
+    float freezeTimer;
 };
 
 #endif 

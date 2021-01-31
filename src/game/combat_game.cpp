@@ -354,6 +354,13 @@ dungeon_point getFirstPointOnPathToTarget (combat_game *combatGame, dungeon_poin
     dungeon_point result = {};
     result.x = -1;
     result.y = -1;
+
+    if (start.x == target.x && start.y == target.y) {
+        result.x = start.x;
+        result.y = start.y;
+        return result;
+    }
+
     unsigned int prevSize = tempMemory->size;
 
     pathfinding_node startNode = {};
@@ -380,14 +387,22 @@ dungeon_point getFirstPointOnPathToTarget (combat_game *combatGame, dungeon_poin
 
         if (node.coords.x == target.x && node.coords.y == target.y) {
             dungeon_point previousCoords = getHashMapValue(&seenPoints, node.coords);
-            // return node after first
-            dungeon_point secondLastCoords = previousCoords;
-            while (previousCoords.x != start.x || previousCoords.y != start.y) {
-                secondLastCoords = previousCoords;
-                previousCoords = getHashMapValue(&seenPoints, previousCoords);
+
+            if (previousCoords.x == start.x || previousCoords.y == start.y) {
+                result.x = target.x;
+                result.y = target.y;
             }
-            result.x = secondLastCoords.x;
-            result.y = secondLastCoords.y;
+            else {
+                // return node after first
+                dungeon_point secondLastCoords = previousCoords;
+                while (previousCoords.x != start.x || previousCoords.y != start.y) {
+                    secondLastCoords = previousCoords;
+                    previousCoords = getHashMapValue(&seenPoints, previousCoords);
+                }
+                result.x = secondLastCoords.x;
+                result.y = secondLastCoords.y;
+            }
+
             break;
         }
         else {
@@ -446,7 +461,6 @@ dungeon_point getFirstPointOnPathToTarget (combat_game *combatGame, dungeon_poin
 }
 
 void updateGoblinPosition (combat_game *combatGame, dungeon_monster *monster, memory_arena *tempMemory) {
-    // TODO(ebuchholz): add pathfinding
     dungeon_position newPos = monster->combatInfo.position;
     dungeon_point playerPos = combatGame->player.combatInfo.position.coords;
 
@@ -709,6 +723,9 @@ void updateDragonPosition (combat_game *combatGame, dungeon_monster *monster) {
 }
 
 void updateMonsterPositions (combat_game *combatGame, memory_arena *tempMemory) {
+    if (combatGame->freeze) {
+        return;
+    }
     dungeon_monster_list *monsters = &combatGame->monsters;
     for (int i = 0; i < monsters->numValues; ++i) {
         dungeon_monster *monster = &monsters->values[i];
@@ -951,7 +968,7 @@ void spawnFireball (combat_game *combatGame) {
     dungeon_projectile projectile = {};
     projectile.pos = combatGame->player.combatInfo.position;
     projectile.velocity = Vector2();
-    projectile.character = 'Z';
+    projectile.character = 'O';
     projectile.color = CONSOLE_COLOR_RED;
 
 
@@ -975,6 +992,9 @@ void spawnFireball (combat_game *combatGame) {
     dungeon_monster_list *monsters = &combatGame->monsters;
     for (int monsterIndex = 0; monsterIndex < monsters->numValues; ++monsterIndex) {
         dungeon_monster *monster = &monsters->values[monsterIndex];
+        if (!monster->combatInfo.alive) {
+            continue;
+        }
 
         float diffX = (float)(monster->combatInfo.position.coords.x - projectile.pos.coords.x);
         float diffY = (float)(monster->combatInfo.position.coords.y - projectile.pos.coords.y);
@@ -1069,14 +1089,28 @@ void updatePlayerAttack (combat_game *combatGame, game_input *input) {
             cursor = readInputWord(cursor, inputWord, combatGame->numTypedLetters);
 
             if (stringsAreEqual(inputWord, "FIREBALL")) {
-
+                spawnFireball(combatGame);
             }
             else if (stringsAreEqual(inputWord, "FREEZE")) {
-
+                combatGame->freeze = true;
+                combatGame->freezeTimer = 0.0f;
             }
             else if (stringsAreEqual(inputWord, "TELEPORT")) {
-
+                if (player->combatInfo.position.coords.x % 4 == 0) {
+                    player->combatInfo.position.coords.y = 4;
+                }
+                else if (player->combatInfo.position.coords.x % 4 == 1) {
+                    player->combatInfo.position.coords.y = 30;
+                }
+                else if (player->combatInfo.position.coords.x % 4 == 2) {
+                    player->combatInfo.position.coords.x = 8;
+                }
+                else if (player->combatInfo.position.coords.x % 4 == 3) {
+                    player->combatInfo.position.coords.x = 84;
+                }
             }
+
+            combatGame->numTypedLetters = 0;
         }
     }
     else {
@@ -1578,6 +1612,9 @@ void drawPlayer (combat_game *combatGame, console_drawer *drawer) {
 
 void drawMonsters (combat_game *combatGame, console_drawer *drawer) {
     drawer->color = CONSOLE_COLOR_YELLOW;
+    if (combatGame->freeze) {
+        drawer->color = CONSOLE_COLOR_CYAN;
+    }
     int offsetX = (COMBAT_ARENA_WIDTH - GAME_WIDTH) / 2;
     int offsetY = (COMBAT_ARENA_HEIGHT - GAME_HEIGHT) / 2;
 
@@ -1882,6 +1919,15 @@ bool updateCombatPhase (combat_game *combatGame, game_input *input, console_draw
             updateMonsterPositions(combatGame, tempMemory);
 
             updatePlayerAttack(combatGame, input);
+
+            if (combatGame->freeze) {
+                combatGame->freezeTimer += DELTA_TIME;
+                while (combatGame->freezeTimer >= 2.0f) {
+                    combatGame->freezeTimer -= 2.0f;
+                    combatGame->freeze = false;
+                }
+            }
+
             //update monster attacks
             updateMonsterAttacks(combatGame);
             
